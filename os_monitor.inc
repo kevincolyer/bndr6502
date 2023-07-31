@@ -120,6 +120,13 @@ m_cmd_table:
         macro_ct m_cmd_load_exe
         macro_ct m_cmd_date
 
+        macro_ct m_cmd_sd_ls
+        macro_ct m_cmd_sd_run
+        macro_ct m_cmd_sd_cd
+        macro_ct m_cmd_sd_cat
+        macro_ct m_cmd_sd_pwd
+        macro_ct m_cmd_sd_init
+
         macro_ct m_cmd_puthex
 
         .word   m_cmd_help_cmd  ; help command at end of rom table - points to start of ram user table
@@ -200,7 +207,35 @@ m_cmd_puthex_cmd:
 m_cmd_puthex_help:
         .string ":hh-put hex at addr, auto inc.",CR,LF
 
+m_cmd_sd_ls_cmd:
+        .byte   "ls?",0
+m_cmd_sd_ls_help:
+        .byte   "ls-sd card dir list",CR,LF,0
 
+m_cmd_sd_run_cmd:
+        .byte   "run?",0
+m_cmd_sd_run_help:
+        .byte   "run-sd load prg file",CR,LF,0
+
+m_cmd_sd_cd_cmd:
+        .byte   "cd?",0
+m_cmd_sd_cd_help:
+        .byte   "cd-change directory",CR,LF,0
+
+m_cmd_sd_cat_cmd:
+        .byte   "cat?",0
+m_cmd_sd_cat_help:
+        .byte   "cat-print contents of file",CR,LF,0
+
+m_cmd_sd_pwd_cmd:
+        .byte   "pwd",0
+m_cmd_sd_pwd_help:
+        .byte   "pwd-print working directory",CR,LF,0
+
+m_cmd_sd_init_cmd:
+        .byte   "init?",0
+m_cmd_sd_init_help:
+        .byte   "init-init -(i)2c (s)d card (f)fat32 (d)dizzybox subsystems",CR,LF,0
 
 
 ; searches command table for prefixes of commands
@@ -668,57 +703,257 @@ msg_not_implimented:
 msg_monitor_cmdtable_added:
         .string "Command added: "
 
-; ; prints message passed in A
-; ; preserves x,y
-; ; if A hi bit set will print CR,LF at end
-; m_print_error_message:
-;         phx
-;         phy
-;         sta R0
-;         and $7f
-;         tay
-;         ldx #0
-; .find_message:
-;         lda msg_error_enum_list,x
-;         bmi .done
-;         beq .end_of_message
-;         inx
-;         bne .find_message
-; .end_of_message:
-;         dey
-;         bne .find_message
-;         ; got message so print!
-; .print_loop:
-;         lda msg_error_enum_list,x
-;         beq .done_print_loop
-;         phx
-;         jsr ACIA_putc
-;         plx
-;         inx
-;         bne .print_loop
-; .done_print_loop:
-;         bit R0
-;         bpl .done
-;         jsr ACIA_putc_CRLF
-; .done
-;         ply
-;         plx
-;         rts
-;
-; msg_error_enum_list:
-;         .string "E_OK"
-;         .string "E_ERROR"
-;         .string "E_SD_NOT_FOUND"
-;         .string "E_DIR_NOT_FOUND"
-;         .string "E_FILE_NOT_FOUND"
-;         .string "E_FS_READ_ERROR"
-;         .string "E_FS_WRITE_ERROR"
-;         .string "E_EOF"
-;         .string "E_NAME_TOO_LONG"
-;         .string "E_FAT32_INIT_ERROR"
-;         .string "E_INVALID_FILENAME_CHAR"
-;         .string "E_OPEN_DIR_FAIL"
-;         .string "E_FILE_HEADER"
-;         .string "E_BAD_FILENAME"
-;         .string "E_OPERATION_INTERRUPTED"
-;         .byte $ff
+msg_monitor_ok:
+        .string "OK",CR,LF
+
+; prints message passed in A
+; preserves x,y
+; will print CR,LF at end unless A hi bit set
+m_print_error_message:
+        phx
+        phy
+        sta     R0
+        and     #$7f
+        tay
+        ldx     #0
+.find_message:
+        lda     msg_error_enum_list,x
+        bmi     .done
+        beq     .end_of_message
+        inx
+        bne     .find_message
+.end_of_message:
+        inx
+        dey                     ; dec message counter
+        bne     .find_message
+        ; got message so print!
+.print_loop:
+        lda     msg_error_enum_list,x
+        beq     .done_print_loop
+        jsr     ACIA_putc
+        inx                     ;inc index
+        bne     .print_loop
+.done_print_loop:
+        bit     R0
+        bmi     .done
+        jsr     ACIA_putc_CRLF
+.done
+        ply
+        plx
+        rts
+
+msg_error_enum_list:
+        .string "E_OK"
+        .string "E_ERROR"
+        .string "E_SD_NOT_FOUND"
+        .string "E_DIR_NOT_FOUND"
+        .string "E_FILE_NOT_FOUND"
+        .string "E_FS_READ_ERROR"
+        .string "E_FS_WRITE_ERROR"
+        .string "E_EOF"
+        .string "E_NAME_TOO_LONG"
+        .string "E_FAT32_INIT_ERROR"
+        .string "E_INVALID_FILENAME_CHAR"
+        .string "E_OPEN_DIR_FAIL"
+        .string "E_FILE_HEADER"
+        .string "E_BAD_FILENAME"
+        .string "E_OPERATION_INTERRUPTED"
+        .string "E_SYNTAX_ERROR"
+        .byte   $ff
+
+_syntax_error:
+        lda     #E_SYNTAX_ERROR
+        sta     os_file_error
+_die_with_os_file_error:
+        lda     os_file_error
+        jsr     m_print_error_message
+        jmp     m_prompt
+
+m_cmd_sd_init:
+        ldy     #4
+        jsr     _get_and_copy_args
+        bcs     .got_args       ; found an arg
+.syntax_e:
+        jmp     _syntax_error
+.got_args:
+        ldy     #0
+        lda     osOutputBuffer,y
+        cmp     #'-'
+        bne     .syntax_e
+        lda     osOutputBuffer+1,y
+
+        cmp     #'i'
+        bne     .next1
+        jsr     i2c_init
+        bra     .end
+
+.next1:
+        cmp     #'s'
+        bne     .next2
+        jsr     k_SPI_init
+        jsr     sd_init
+        bra     .end
+
+.next2:
+        cmp     #'f'
+        bne     .next3
+        jsr     fat32_init
+        bra     .end
+
+.next3:
+        cmp     #'d'
+        bne     .syntax_e
+        jsr     dizzybox_init
+.end:
+        macro_putz msg_monitor_ok
+        jmp     m_prompt
+
+; isolate arg
+; send to dizzybox_cd
+m_cmd_sd_cd:
+        ldy     #2
+        jsr     _get_and_copy_args
+.call_dizzybox:
+        jsr     dizzybox_cd
+        bcc     .end
+
+        jmp     _die_with_os_file_error
+.end:
+        jmp     m_prompt
+
+
+
+
+
+; y holds index of next char of osInputBuffer to check
+; returns updated osCallArg1 with  Y with last char indexed
+; copies arg to osOutputBuffer and z terminates
+; uses osInputBuffer and osCallArg1 and osCallArg0
+; returns with osCallArg0 pointing to arg
+; preserves x
+; no arg c=0, arg c=1
+_get_and_copy_args:
+        macro_store_symbol2word osInputBuffer,osCallArg1
+        jsr     _get_arg
+        phy                     ;stash for later
+        bcc     .no_arg
+        ; copy to osOutputBuffer
+        lda     #0
+        sta     osOutputBuffer+1,y; store teminating zero after last entry
+.copy_loop:
+        lda     (osCallArg1),y  ; copy backwards
+        sta     osOutputBuffer,y
+        dey
+        bpl     .copy_loop
+        sec
+        bcs     .return
+.no_arg:
+        stz     osOutputBuffer
+.return:
+        macro_store_symbol2word osOutputBuffer,osCallArg0
+        ply
+        rts
+
+
+
+
+; takes osCallArg1 with buffer and index in y
+; returns osCallArg1 with updated buffer with y holding last char of arg
+; c is 0 if no arg
+; c is 1 if arg
+; trims spaces up to arg. End is noted by space or nul.
+; preserves X
+; Assumes buffer is no longer than 256 bytes!!! and page aligned
+_get_arg:
+.found=osR0
+        phx
+        clc
+        stz     .found
+        ; trim spaces
+.trim_loop:
+        lda     (osCallArg1),y
+        beq     .done           ; eol so nothing found
+        cmp     #SPACE
+        bne     .found_wordchar ; not a space so found word boundry
+        iny
+        bne     .trim_loop
+.found_wordchar:
+        tya
+        clc
+        adc     osCallArg1      ; update the pointer
+        sta     osCallArg1
+        ldy     #1              ; reset index, one past the char we found
+.arg_loop:
+        lda     (osCallArg1),y
+        beq     .done_and_found ; eol, job done
+        cmp     #SPACE
+        beq     .done_and_found ; space, job done for this arg (may be more!)
+        iny
+        bne     .arg_loop
+.done_and_found:
+        dey                     ; rewind a tad
+        sec
+.done:
+        plx
+        rts
+
+
+; iterate opening existing path from root
+; list directory
+m_cmd_sd_ls:
+        ldy     #2
+        jsr     _get_and_copy_args
+        bcc     .skip_syntax_error; should not have args (not implimented yet)
+        jmp     _syntax_error
+.skip_syntax_error:
+        jsr     dizzybox_ls
+        bcc     .end
+        lda     os_file_error
+        beq     .end
+        jmp     _die_with_os_file_error
+.end:
+        jmp     m_prompt
+
+
+; isolate arg
+; make canonical
+; iterate opening existing path from root
+; find and open - check not a DIR
+; do executable stuff
+m_cmd_sd_run:
+        ldy     #4
+        jsr     _get_and_copy_args
+.call_dizzybox:
+        jsr     dizzybox_load
+        bcc     .end
+        lda     os_file_error
+        beq     .end
+        jmp     _die_with_os_file_error
+.end:
+        ; all loaded well so run executable
+        jmp     (osCallArg0)
+
+; isolate arg
+m_cmd_sd_cat:
+        ldy     #3
+        jsr     _get_and_copy_args
+        bcc     .end            ; no args nothing to do
+.call_dizzybox:
+        jsr     dizzybox_cat
+        bcc     .end
+        jmp     _die_with_os_file_error
+.end:
+        jmp     m_prompt
+
+; syntax_error:
+;         lda #E_SYNTAX_ERROR
+;         jsr m_print_error_message
+;         jmp m_prompt
+
+; just do it!
+m_cmd_sd_pwd:
+        jsr     dizzybox_pwd
+        jmp     m_prompt
+
+
+

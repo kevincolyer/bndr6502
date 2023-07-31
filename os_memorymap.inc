@@ -15,7 +15,9 @@ osVariables     = $400
 osUserCmdTable  = $500          ; only allow 256 bytes for this.
 
 fat32_workspace = $600          ; page aligned 512 byte workspace
-userLowMem      = $800
+current_path=$800               ; dizzybox
+temp_path=$880                  ; dizzybox
+userLowMem      = $900
 
 userStart       = $1000
 userLowMemEnd   = userStart-1
@@ -179,7 +181,7 @@ rtc_reading_dow:
 
 subdirname:                     ; used in os_file_functions.inc
         blk     14
-filename:
+filename:                       ; dizzybox
         blk     14
         byt                     ; just in case
 os_file_error:
@@ -188,7 +190,14 @@ dizzybox_init_ok:               ; > 0 is NOT initialised ok.
         byt
 dizzybox_case_insensitive:      ; 0 case in sensitive 1 sensitive (default 0 in dizzybox_init)
         byt
+        ; TODO - move to memorymap
 
+        .align  8               ; align to page boundary
+
+current_path_len:               ; dizzybox
+        .byt
+temp_path_len:                  ; dizzybox
+        .byt
         .dend
 
 ;--------------------------------------------

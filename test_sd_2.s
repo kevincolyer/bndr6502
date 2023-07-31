@@ -16,23 +16,12 @@ main:
         ; load monitor command to monitor
         macro_store_symbol2word sdoldtest,osCallArg0
         macro_oscall oscMonitorAddCmd
-        macro_store_symbol2word sd_ls,osCallArg0
-        macro_oscall oscMonitorAddCmd
-        macro_store_symbol2word sd_run,osCallArg0
-        macro_oscall oscMonitorAddCmd
-        macro_store_symbol2word sd_cd,osCallArg0
-        macro_oscall oscMonitorAddCmd
-        macro_store_symbol2word sd_cat,osCallArg0
-        macro_oscall oscMonitorAddCmd
-        macro_store_symbol2word sd_pwd,osCallArg0
-        macro_oscall oscMonitorAddCmd
+
         macro_store_symbol2word sd_test,osCallArg0
         macro_oscall oscMonitorAddCmd
-        macro_store_symbol2word sd_init,osCallArg0
-        macro_oscall oscMonitorAddCmd
 
-        jsr     dizzybox_init
-        bcs     .quit
+        ; jsr     dizzybox_init
+        ; bcs     .quit
 
         macro_print "Dizzybox initialised",CR,LF
 
@@ -42,7 +31,7 @@ main:
         ; TODO remove and return k_ functions to os_
         .include "os_file_functions.inc"
         .include "libfat32.inc"
-        .include "os_dizzybox.inc"
+        ;    .include "os_dizzybox.inc"
 
 sdoldtest:
         .word   sdoldtest_cmd_cmd
@@ -67,73 +56,10 @@ sd_test_cmd_cmd:
 sd_test_cmd_help:
         .byte   "test-run test suite",CR,LF,0
 
-
-
-
-;---------------------TODO move later
-
-sd_ls:
-        .word   sd_ls_cmd_cmd
-        .word   sd_ls_cmd
-        .word   sd_ls_cmd_help
-sd_run:
-        .word   sd_run_cmd_cmd
-        .word   sd_run_cmd
-        .word   sd_run_cmd_help
-sd_cd:
-        .word   sd_cd_cmd_cmd
-        .word   sd_cd_cmd
-        .word   sd_cd_cmd_help
-sd_cat:
-        .word   sd_cat_cmd_cmd
-        .word   sd_cat_cmd
-        .word   sd_cat_cmd_help
-sd_pwd:
-        .word   sd_pwd_cmd_cmd
-        .word   sd_pwd_cmd
-        .word   sd_pwd_cmd_help
-sd_init:
-        .word   sd_init_cmd_cmd
-        .word   sd_init_cmd
-        .word   sd_init_cmd_help
-
-
-sd_ls_cmd_cmd:
-        .byte   "ls?",0
-sd_ls_cmd_help:
-        .byte   "ls-sd card dir list",CR,LF,0
-
-sd_run_cmd_cmd:
-        .byte   "run?",0
-sd_run_cmd_help:
-        .byte   "run-sd load prg file",CR,LF,0
-
-sd_cd_cmd_cmd:
-        .byte   "cd?",0
-sd_cd_cmd_help:
-        .byte   "cd-change directory",CR,LF,0
-
-sd_cat_cmd_cmd:
-        .byte   "cat?",0
-sd_cat_cmd_help:
-        .byte   "cat-print contents of file",CR,LF,0
-
-sd_pwd_cmd_cmd:
-        .byte   "pwd",0
-sd_pwd_cmd_help:
-        .byte   "pwd-print working directory",CR,LF,0
-
-sd_init_cmd_cmd:
-        .byte   "init?",0
-sd_init_cmd_help:
-        .byte   "init-init -(i)2c (s)d card (f)fat32 (d)dizzybox subsystems",CR,LF,0
-
 mysubdirname:
         .asciiz "SUBFOLDR   "
 myfilename:
         .asciiz "DEEPFILETXT"
-
-
 
 ; helper sub
 die_with_os_file_error_and_stage:
@@ -231,7 +157,7 @@ sdoldtest_cmd:
         ; list a directory
 
         jsr     k_fat32_open_root_dir
-        jsr     dizzybox_ls
+        ;  jsr     dizzybox_ls
         macro_oscall oscPutCrLf
 
 
@@ -323,253 +249,67 @@ msg_dirlisting:
 msg_loadandrun:
         .string "Loading and running a program from SD card",CR,LF
 
-sd_init_cmd:
-        ldy     #4
-        jsr     _get_and_copy_args
-        bcs     .got_args       ; found an arg
-.syntax_e:
-        jmp     syntax_error
-.got_args:
-        ldy     #0
-        lda     osOutputBuffer,y
-        cmp     #'-'
-        bne     .syntax_e
-        lda     osOutputBuffer+1,y
 
-        cmp     #'i'
-        bne     .next1
-        ; TODO jsr     i2c_init ;uncomment when in k space
-        bra     .end
-
-.next1:
-        cmp     #'s'
-        bne     .next2
-        ; TODO jsr     k_SPI_init ;uncomment when in k space
-        jsr     sd_init
-        bra     .end
-
-.next2:
-        cmp     #'f'
-        bne     .next3
-        jsr     fat32_init
-        bra     .end
-
-.next3:
-        cmp     #'d'
-        bne     .syntax_e
-        jsr     dizzybox_init
-.end:
-        macro_print "OK",CR,LF
-        os_monitor_return
-
-; isolate arg
-; send to dizzybox_cd
-sd_cd_cmd:
-        ldy     #2
-        jsr     _get_and_copy_args
-.call_dizzybox:
-        jsr     dizzybox_cd
-        bcc     .end
-;         lda os_file_error
-;         beq .end
-        jmp     die_with_os_file_error
-.end:
-        os_monitor_return
-
-
-
-
-
-; y holds index of next char of osInputBuffer to check
-; returns updated osCallArg1 with  Y with last char indexed
-; copies arg to osOutputBuffer and z terminates
-; uses osInputBuffer and osCallArg1 and osCallArg0
-; returns with osCallArg0 pointing to arg
-; preserves x
-; no arg c=0, arg c=1
-_get_and_copy_args:
-        macro_store_symbol2word osInputBuffer,osCallArg1
-        jsr     _get_arg
-        phy                     ;stash for later
-        bcc     .no_arg
-        ; copy to osOutputBuffer
-        lda     #0
-        sta     osOutputBuffer+1,y; store teminating zero after last entry
-.copy_loop:
-        lda     (osCallArg1),y  ; copy backwards
-        sta     osOutputBuffer,y
-        dey
-        bpl     .copy_loop
-        sec
-        bcs     .return
-.no_arg:
-        stz     osOutputBuffer
-.return:
-        macro_store_symbol2word osOutputBuffer,osCallArg0
-        ply
-        rts
-
-
-
-
-; takes osCallArg1 with buffer and index in y
-; returns osCallArg1 with updated buffer with y holding last char of arg
-; c is 0 if no arg
-; c is 1 if arg
-; trims spaces up to arg. End is noted by space or nul.
-; preserves X
-; Assumes buffer is no longer than 256 bytes!!! and page aligned
-_get_arg:
-.found=osR0
-        phx
-        clc
-        stz     .found
-        ; trim spaces
-.trim_loop:
-        lda     (osCallArg1),y
-        beq     .done           ; eol so nothing found
-        cmp     #SPACE
-        bne     .found_wordchar ; not a space so found word boundry
-        iny
-        bne     .trim_loop
-.found_wordchar:
-        tya
-        clc
-        adc     osCallArg1      ; update the pointer
-        sta     osCallArg1
-        ldy     #1              ; reset index, one past the char we found
-.arg_loop:
-        lda     (osCallArg1),y
-        beq     .done_and_found ; eol, job done
-        cmp     #SPACE
-        beq     .done_and_found ; space, job done for this arg (may be more!)
-        iny
-        bne     .arg_loop
-.done_and_found:
-        dey                     ; rewind a tad
-        sec
-.done:
-        plx
-        rts
-
-
-; iterate opening existing path from root
-; list directory
-sd_ls_cmd:
-        ldy     #2
-        jsr     _get_and_copy_args
-        bcc     .skip_syntax_error; should not have args (not implimented yet)
-        jmp     syntax_error
-.skip_syntax_error:
-        jsr     dizzybox_ls
-        bcc     .end
-        lda     os_file_error
-        beq     .end
-        jmp     die_with_os_file_error
-.end:
-        os_monitor_return
-
-
-; isolate arg
-; make canonical
-; iterate opening existing path from root
-; find and open - check not a DIR
-; do executable stuff
-sd_run_cmd:
-        ldy     #4
-        jsr     _get_and_copy_args
-.call_dizzybox:
-        jsr     dizzybox_load
-        bcc     .end
-        lda     os_file_error
-        beq     .end
-        jmp     die_with_os_file_error
-.end:
-        ; all loaded well so run executable
-        jmp     (osCallArg0)
-
-; isolate arg
-sd_cat_cmd:
-        ldy     #3
-        jsr     _get_and_copy_args
-        bcc     .end            ; no args nothing to do
-.call_dizzybox:
-        jsr     dizzybox_cat
-        bcc     .end
-        jmp     die_with_os_file_error
-.end:
-        os_monitor_return
-
-syntax_error:
-        ;TODO
-        macro_print "TODO proper syntax error",CR,LF
-
-        os_monitor_return
-
-; just do it!
-sd_pwd_cmd:
-        jsr     dizzybox_pwd
-        os_monitor_return
 
 
 
 
 ; ===================================================
 sd_test_cmd:
-        jsr     dizzybox_init
-        macro_putzarg0 .msg_test
-        macro_putzarg0 .msg_test_p_and_f
-        ldx     #0
-.testloop:
-        ldy     #0
-        macro_oscall oscGetC
-        bcc     .no_key
-        bra     .early_quit
-.no_key:
-        lda     .p_and_f_test,x
-        bpl     .not_done_testing; $ff marks end of strings
-.early_quit:
-        jmp     .done_testing
-        ;
-.not_done_testing:
-        sta     osOutputBuffer,y
-        beq     .done_copy      ; if z terminated done
-        iny
-        inx
-        bne     .no_key
-.done_copy:
-        inx
-        macro_print_c "'"
-        macro_putzarg0 osOutputBuffer
-        macro_putzarg0 .arrow
-        stz     os_file_error
-        macro_store_symbol2word osOutputBuffer,osCallArg0
-        phx
-        jsr     _parse_and_format_8_3
-        plx
-        macro_putzarg0 filename
-        macro_print_c "'"
-
-        lda     os_file_error   ; E_OK?
-        beq     .pass           ; yes
-        ; fail message
-        macro_print_c SPACE
-        lda     os_file_error
-        macro_oscall oscPutHexByte
-        macro_putzarg0 .msg_fail
-        jmp     .testloop
-        ; passing means we can give a roundtrip test too
-.pass:
-        macro_putzarg0 .msg_pass
-.next_loop:
-        macro_store_symbol2word filename,osCallArg1
-        macro_store_symbol2word osOutputBuffer,osCallArg0
-        jsr     _format_8_dot_3 ; test  roundtrip
-        macro_print_c "'"
-        macro_putzarg0 osOutputBuffer
-        macro_print_c "'"
-        macro_oscall oscPutCrLf
-        jmp     .testloop
+;         jsr     dizzybox_init
+;         macro_putzarg0 .msg_test
+;         macro_putzarg0 .msg_test_p_and_f
+;         ldx     #0
+; .testloop:
+;         ldy     #0
+;         macro_oscall oscGetC
+;         bcc     .no_key
+;         bra     .early_quit
+; .no_key:
+;         lda     .p_and_f_test,x
+;         bpl     .not_done_testing; $ff marks end of strings
+; .early_quit:
+;         jmp     .done_testing
+;         ;
+; .not_done_testing:
+;         sta     osOutputBuffer,y
+;         beq     .done_copy      ; if z terminated done
+;         iny
+;         inx
+;         bne     .no_key
+; .done_copy:
+;         inx
+;         macro_print_c "'"
+;         macro_putzarg0 osOutputBuffer
+;         macro_putzarg0 .arrow
+;         stz     os_file_error
+;         macro_store_symbol2word osOutputBuffer,osCallArg0
+;         phx
+;         jsr     _parse_and_format_8_3
+;         plx
+;         macro_putzarg0 filename
+;         macro_print_c "'"
+;
+;         lda     os_file_error   ; E_OK?
+;         beq     .pass           ; yes
+;         ; fail message
+;         macro_print_c SPACE
+;         lda     os_file_error
+;         macro_oscall oscPutHexByte
+;         macro_putzarg0 .msg_fail
+;         jmp     .testloop
+;         ; passing means we can give a roundtrip test too
+; .pass:
+;         macro_putzarg0 .msg_pass
+; .next_loop:
+;         macro_store_symbol2word filename,osCallArg1
+;         macro_store_symbol2word osOutputBuffer,osCallArg0
+;         jsr     _format_8_dot_3 ; test  roundtrip
+;         macro_print_c "'"
+;         macro_putzarg0 osOutputBuffer
+;         macro_print_c "'"
+;         macro_oscall oscPutCrLf
+;         jmp     .testloop
 
 .done_testing:
         jsr     more_testing
@@ -607,54 +347,54 @@ sd_test_cmd:
         .byte   $ff
 
 more_testing:
-        macro_putzarg0 .msg_testing_cd
-        lda     #$ff
-        sta     os_in_testing_mode; needed for testing of cd routine  TODO - check I may move opening dirs to iterate path...
-        ldx     #0
-.testloop:
-        lda     .cd_tests,x
-        bpl     .not_done
-        jmp     .done
-.not_done:
-        macro_putzarg0 .msg_test
-
-        ldy     #0
-        ; load test
-.loop2:
-        lda     .cd_tests,x
-        sta     osOutputBuffer,y
-        beq     .start_test
-        inx
-        iny
-        bne     .loop2
-
-.start_test:
-        sta     osOutputBuffer,y; final terminating zero
-
-        macro_putzarg0 osOutputBuffer
-        macro_putzarg0 .msg_test_arrow
-
-        macro_store_symbol2word osOutputBuffer,osCallArg0
-        jsr     dizzybox_cd
-
-        bcc     .cont           ; error?
-        lda     os_file_error
-        beq     .cont           ; no error really. TODO why was carry set?
-        lda     #'$'
-        macro_oscall oscPutC
-        lda     os_file_error
-        macro_oscall oscPutHexByte
-        lda     #SPACE
-        macro_oscall oscPutC
-.cont:
-        jsr     dizzybox_pwd
-
-        inx
-        iny
-        jmp     .testloop       ; no!
-.done:
-        stz     os_in_testing_mode
-        macro_oscall oscPutCrLf
+;         macro_putzarg0 .msg_testing_cd
+;         lda     #$ff
+;         sta     os_in_testing_mode; needed for testing of cd routine  TODO - check I may move opening dirs to iterate path...
+;         ldx     #0
+; .testloop:
+;         lda     .cd_tests,x
+;         bpl     .not_done
+;         jmp     .done
+; .not_done:
+;         macro_putzarg0 .msg_test
+;
+;         ldy     #0
+;         ; load test
+; .loop2:
+;         lda     .cd_tests,x
+;         sta     osOutputBuffer,y
+;         beq     .start_test
+;         inx
+;         iny
+;         bne     .loop2
+;
+; .start_test:
+;         sta     osOutputBuffer,y; final terminating zero
+;
+;         macro_putzarg0 osOutputBuffer
+;         macro_putzarg0 .msg_test_arrow
+;
+;         macro_store_symbol2word osOutputBuffer,osCallArg0
+;         jsr     dizzybox_cd
+;
+;         bcc     .cont           ; error?
+;         lda     os_file_error
+;         beq     .cont           ; no error really. TODO why was carry set?
+;         lda     #'$'
+;         macro_oscall oscPutC
+;         lda     os_file_error
+;         macro_oscall oscPutHexByte
+;         lda     #SPACE
+;         macro_oscall oscPutC
+; .cont:
+;         jsr     dizzybox_pwd
+;
+;         inx
+;         iny
+;         jmp     .testloop       ; no!
+; .done:
+;         stz     os_in_testing_mode
+;         macro_oscall oscPutCrLf
         rts
 .cd_tests:
         .string "."
@@ -678,14 +418,7 @@ more_testing:
 .msg_test_arrow:
         .string " => "
 
-
-; TODO - move to memorymap
 stage:
-        .byt
-        .align  8               ; align to page boundary
-current_path:
-        .blk    128
-current_path_len:
         .byt
 
 

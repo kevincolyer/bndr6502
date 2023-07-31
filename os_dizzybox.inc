@@ -16,12 +16,11 @@ dizzybox_init:
         lda     os_file_error
         sta     dizzybox_init_ok
         bcc     .skip
-        jsr     print_os_file_error
+        lda     os_file_error
+        jsr     m_print_error_message
 .skip:
 
         rts
-
-
 
 ; make canonical and check (do simple permutations)
 ; iterate opening existing path from root
@@ -32,7 +31,6 @@ dizzybox_cd:
         phx
         phy
 
-;         macro_print_c "c"
         bit     os_in_testing_mode
         bmi     .skip_next
 
@@ -55,15 +53,11 @@ dizzybox_cd:
         ; 'subfolder' case
 .try_to_open:
 
-        ;macro_print "parse and format",CR,LF
-        ;         macro_print_c "p"
         jsr     _parse_and_format_8_3
         bcs     .do_exit
         bit     os_in_testing_mode
         bmi     .skip_if_testing
 
-        ;macro_print "Opening new dir",CR,LF
-        ;         macro_print_c "f"
         ldx     #<filename
         ldy     #>filename
         jsr     k_fat32_find_open_dir_ent
@@ -74,10 +68,10 @@ dizzybox_cd:
         ldy     #0
         ldx     current_path_len
 .add_dir_to_path:
-        ;macro_print "add dir to Path",CR,LF
+
         lda     filename,y
         sta     current_path,x
-        ;         macro_oscall oscPutC
+        ;         jsr ACIA_putc
         inx
         iny
         cpy     #11
@@ -90,15 +84,14 @@ dizzybox_cd:
         bra     .do_good_exit
 
 .go_to_root:
-;         macro_print_c "r"
+
         jsr     dizzybox_init
 .do_good_exit:
         clc
         bra     .do_exit
 
 .go_to_parent:
-        ;macro_print "Opening parent",CR,LF
-        ;         macro_print_c "p"
+
         lda     current_path_len; look at path length
         cmp     #13             ; if at 1+8+3(+1)
         bcc     .go_to_root     ; then we go to root
@@ -120,7 +113,6 @@ dizzybox_cd:
         plx
         rts
 
-
 dizzybox_ls:
 ; preserves x, y
         phx
@@ -139,23 +131,23 @@ dizzybox_ls:
         ldx     #'d'
 .notefile
         txa                     ; swap in d or space
-        macro_oscall oscPutC
-        macro_print_c SPACE
+        jsr     ACIA_putc
+        k_macro_print_c SPACE
         ldy     #0
 .printname:
         lda     (zp_sd_address),y
-        macro_oscall oscPutC
+        jsr     ACIA_putc
         iny
         cpy     #8
         bne     .printname
-        macro_print_c '.'
+        k_macro_print_c '.'
 .printext:
         lda     (zp_sd_address),y
-        macro_oscall oscPutC
+        jsr     ACIA_putc
         iny
         cpy     #11
         bne     .printext
-        macro_oscall oscPutCrLf
+        jsr     ACIA_putc_CRLF
         bra     .printloop
 .quit:
         ply
@@ -167,15 +159,13 @@ dizzybox_load:
         phx
         phy
         stz     os_file_error
-        ;         macro_print_c "c"
+
         jsr     _open_current_path
         bcs     .return
 
-;         macro_print_c "p"
         jsr     _parse_and_format_8_3
         bcs     .return
 
-;         macro_print_c "f"
         ldx     #<filename
         ldy     #>filename
         jsr     k_fat32_find_open_dir_ent
@@ -209,25 +199,16 @@ dizzybox_cat:
         phx
         clc
 
-        ;macro_print "Opening Path",CR,LF
-        ;         macro_print_c "c"
         jsr     _open_current_path
         bcs     .return_sec
 
-        ;macro_print "parse and format",CR,LF
-        ;         macro_print_c "p"
         jsr     _parse_and_format_8_3
         bcs     .return_sec
 
-;         macro_print_c "f"
-;         macro_print "Opening file",CR,LF
         ldx     #<filename
         ldy     #>filename
         jsr     k_fat32_find_open_dir_ent
         bcs     .return_sec
-
-;         macro_print_c "r"
-        ;macro_print "Starting Read",CR,LF
 
         ldy     #0
 .loop:
@@ -235,14 +216,14 @@ dizzybox_cat:
         jsr     fat32_file_readbyte
         ply
         bcs     .return         ; found end of file marker
-        macro_oscall oscPutC
+        jsr     ACIA_putc
         iny
         cpy     #80             ; todo paging here?
         bne     .loop
-        macro_oscall oscPutCrLf
+        jsr     ACIA_putc_CRLF
         ldy     #0
         ; check keypress
-        macro_oscall oscGetC
+        jsr     ACIA_getc
         bcc     .loop
         ; get out keys?
         cmp     #ESC
@@ -262,27 +243,26 @@ dizzybox_cat:
         plx
         ply
         rts
-
-; preserves x, y
-; does not change underlying fat32 state
+        ; preserves x, y
+        ; does not change underlying fat32 state
 dizzybox_pwd:
         macro_store_symbol2word current_path,osCallArg2
         macro_store_symbol2word filename,osCallArg1
         macro_store_symbol2word osOutputBuffer,osCallArg0
         jsr     _make_iterate_path
 
-        macro_print_c '/'
+        k_macro_print_c '/'
 
 .loop:
         jsr     _iterate_path
         bcs     .done
 
         jsr     _format_8_dot_3
-        macro_oscall oscPutZArg0
-        macro_print_c '/'
+        jsr     ACIA_putZ_osCallArg0;macro_oscall oscPutZArg0
+        k_macro_print_c '/'
         bra     .loop
 .done:
-        macro_oscall oscPutCrLf
+        jsr     ACIA_putc_CRLF
         rts
 
 ; make a path iterator with path in osCallArg2 and output filename at osCallArg1
@@ -343,8 +323,6 @@ _parse_and_format_8_3:
 .length=osR0
 .dot=osR0+1
 .dots_seen=osR1
-;         macro_print_c "C"
-
         stz     .length
         stz     .dots_seen
         stz     .dot
@@ -365,7 +343,7 @@ _parse_and_format_8_3:
 .count_loop:
         lda     (osCallArg0),y
         beq     .check_count
-        ;         macro_oscall oscPutC
+        ;         jsr ACIA_putc
         lda     (osCallArg0),y
         ; check is a legal char
         jsr     _case_insensitise
@@ -381,8 +359,6 @@ _parse_and_format_8_3:
 .count_loop_continue:
         iny
         bne     .count_loop
-
-;         macro_print_c "L"
 .check_count:
         cpy     #8+1+3+1
         bcs     .bad_file_name  ; filename too Long!
@@ -405,8 +381,6 @@ _parse_and_format_8_3:
         lda     .length
         cmp     #9
         bcs     .bad_file_name  ; filename before dot too long
-
-;         macro_print_c "Y"
 .prep_copy:
         ; prepare for copy filename
         ldx     #0
@@ -427,13 +401,11 @@ _parse_and_format_8_3:
         bpl     .copy_loop
 
 .all_done:
-;         macro_print_c "K"
+
         clc
         rts
 
 .bad_file_name:
-
-;         macro_print_c "E"
         lda     #E_BAD_FILENAME
 .other_error:
         sec
@@ -456,8 +428,6 @@ _case_insensitise:
 
         plx
         rts
-
-
 
 ; takes osCallArg1 with filename internal and copies to osCallArg0 in human form
 _format_8_dot_3:
@@ -518,7 +488,7 @@ _open_current_path:
         phx
         phy
         stz     os_file_error
-;         macro_print_c "R"
+
         jsr     k_fat32_open_root_dir
         bcs     .return_error
         lda     os_file_error
@@ -526,7 +496,7 @@ _open_current_path:
         ldx     #1              ; skip initial /
         ; for each path segment
 .path_loop:
-        ;         macro_print_c "P"
+
         cpx     current_path_len
         beq     .return
 
@@ -535,7 +505,7 @@ _open_current_path:
 .copy_path:
         lda     current_path,x
         sta     filename,y
-        ;macro_oscall oscPutC
+        ;jsr ACIA_putc
         iny
         inx
         cpy     #11             ; at end of 8+3+1 ? (so we skip trailing /)
@@ -544,7 +514,7 @@ _open_current_path:
         sta     filename,y      ; terminate with zero
         inx                     ; skip /
         ; open it, stashing x and y
-        ;macro_print_c "F"
+
         phx
         phy
         ldx     #<filename
@@ -555,14 +525,14 @@ _open_current_path:
         bcs     .return_error
         bcc     .path_loop
 .return_error:
-        ;macro_print_c "E"
+
         sec
         bra     .quit
 .return:
-        ;macro_print_c "K"
+
         clc
 .quit:
         ply
         plx
-        ;macro_oscall oscPutCrLf
+        ;jsr ACIA_putc_CRLF
         rts

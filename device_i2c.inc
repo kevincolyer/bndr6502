@@ -377,7 +377,7 @@ i2c_write_byte:
         lda     i2c_v_byte      ; debug
         jmp     ACIA_putc_hex_byte; macro_oscall oscPutHexByte; debug
         lda     #SPACE
-        jmp     ACIA_putc   macro_oscall oscPutC; debug
+        jmp     ACIA_putc       ;macro_oscall oscPutC; debug
         .endif
         ;   if (send_start) {
         ;     i2c_start_cond();

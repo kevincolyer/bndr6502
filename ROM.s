@@ -4,10 +4,10 @@
 ;
 ; BNDR6502 uses VIA6551 at iospace $FE00
 
-        .include "os_macro.inc"
+        .include "os_macro_general.inc"
         .include "os_memorymap.inc"
         .include "os_constants.inc"
-        ;  .include "os_calls.inc"
+        ;.include "os_calls.inc"
 
 
 ; macro for printing z string
@@ -17,6 +17,22 @@
         ldx     #<\zstring
         ldy     #>\zstring
         jsr     ACIA_putZ_XY
+        .endm
+
+        .macro  macro_putz_safe,zstring
+        phy
+        phx
+        ldx     #<\zstring
+        ldy     #>\zstring
+        jsr     ACIA_putZ_XY
+        plx
+        ply
+        .endm
+
+        ; kernal version simple print one char
+        .macro  k_macro_print_c,char
+        lda     #\char
+        jsr     ACIA_putc
         .endm
 
 ; HARDWARE rom vectors
@@ -215,7 +231,7 @@ msg_version:
         ifdef   nolcd
         .byte   "(-Dnolcd) "
         endif
-        .byte   "v1.0.0.rc1",CR,LF,0
+        .byte   "v1.0.0",CR,LF,0
 
 ;===============================================
 ;       COLD BOOT / RESET ENTRY POINT
@@ -316,7 +332,7 @@ MAINLOOP:
         .include "os_date_time.inc"
         .include "os_file_functions.inc"
         .include "libfat32.inc"
-        ;  .include "os_dizzybox.inc"                    TODO add once kernal level calls added
+        .include "os_dizzybox.inc"
 
 ;===============================================
 ;       VARIOUS STRINGS

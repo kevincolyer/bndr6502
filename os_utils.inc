@@ -217,6 +217,7 @@ ACIA_putc_z:
 ; print a z terminated string in osCallArg0
 ;-----------------------------------------------
 ACIA_putZ_osCallArg0:
+        phy
         ldy     #0
 .loop:
         lda     (osCallArg0),y
@@ -225,6 +226,7 @@ ACIA_putZ_osCallArg0:
         iny
         bne     .loop
 .done:
+        ply
         rts
 
 ;-----------------------------------------------
