@@ -28,9 +28,8 @@ main:
 .quit:
         os_monitor_return
 
-        ; TODO remove and return k_ functions to os_
-        .include "os_file_functions.inc"
-        .include "libfat32.inc"
+        ;.include "os_file_functions.inc"
+        ;.include "libfat32.inc"
         ;    .include "os_dizzybox.inc"
 
 sdoldtest:
@@ -87,7 +86,7 @@ sdoldtest_cmd:
         ; Open root directory
         ; stage 1
         inc     stage
-        jsr     k_fat32_open_root_dir
+        jsr     os_fat32_open_root_dir
         bcc     .open_root_ok
         jmp     die_with_os_file_error_and_stage
 .open_root_ok:
@@ -97,7 +96,7 @@ sdoldtest_cmd:
         inc     stage
         ldx     #<mysubdirname
         ldy     #>mysubdirname
-        jsr     k_fat32_find_open_dir_ent
+        jsr     os_fat32_find_open_dir_ent
         bcc     .foundsubdir
 
         ; Subdirectory not found
@@ -114,7 +113,7 @@ sdoldtest_cmd:
         ; Find file by name
         ldx     #<myfilename
         ldy     #>myfilename
-        jsr     k_fat32_find_open_dir_ent
+        jsr     os_fat32_find_open_dir_ent
         bcc     .foundfile
 
         ; File not found
@@ -129,7 +128,7 @@ sdoldtest_cmd:
         inc     stage
         ldx     #<buffer
         ldy     #>buffer
-        jsr     k_fat32_load_file
+        jsr     os_fat32_load_file
         ;         bcc     .file_read_ok
         ;         jmp
         ; .file_read_ok:
@@ -156,7 +155,7 @@ sdoldtest_cmd:
         ;------------------------------------------
         ; list a directory
 
-        jsr     k_fat32_open_root_dir
+        jsr     os_fat32_open_root_dir
         ;  jsr     dizzybox_ls
         macro_oscall oscPutCrLf
 
@@ -168,11 +167,11 @@ sdoldtest_cmd:
         macro_putzarg0 msg_loadandrun
 
 
-        jsr     k_fat32_open_root_dir
+        jsr     os_fat32_open_root_dir
 
         ldx     #<exename
         ldy     #>exename
-        jsr     k_fat32_find_open_dir_ent
+        jsr     os_fat32_find_open_dir_ent
         bcc     .foundfile2
 
         ; File not found
@@ -183,9 +182,9 @@ sdoldtest_cmd:
         ; t16.PRG is assembled to $2000 with PRG header.
         ;         ldx     #<buffer
         ;         ldy     #>buffer
-        ;         jsr     k_fat32_load_file
+        ;         jsr     os_fat32_load_file
 
-        jsr     k_executable_load
+        jsr     os_executable_load
         bcc     .execute
         lda     os_file_error   ; was the error eof?
         beq     .execute        ; yes
