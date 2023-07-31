@@ -1,0 +1,34 @@
+        .include "os_memorymap.inc"
+        .include "os_constants.inc"
+        .include "os_calls.inc"
+        .include "os_macro.inc"
+
+        .org userStart          ; expected org
+; userZp - origin of user zero page
+; userLowMem - origin of user low mem space ~$600 to userStart
+
+main:
+        ; load monitor command to monitor
+        macro_store_symbol2word testcmd,osCallArg0
+        macro_oscall oscMonitorAddCmd
+
+        ; back to monitor
+        os_monitor_return
+
+testcmd:
+        .word testfunction_cmd
+        .word testfunction
+        .word testfunction_help
+
+testcmd_cmd:        .string "test"
+testcmd_help:        .string "test-test function",CR,LF
+
+testfunction:
+        macro_store_symbol2word testcmd_msg,osCallArg0
+        macro_oscall oscPutZArg0
+        os_monitor_return
+
+testcmd_msg:
+        .string "test function works well",CR,LF
+
+
