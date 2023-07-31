@@ -131,10 +131,11 @@ k_executable_load:
         sta     (.load)
         inc     .load
         bne     .loop
+        k_macro_print_c '.'
         inc     .load+1
         bne     .loop
 .eof:
-
+        jsr     ACIA_putc_CRLF
         rts                     ; all ok, end of file
 .error:
         sec

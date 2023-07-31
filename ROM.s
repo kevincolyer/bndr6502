@@ -231,7 +231,7 @@ msg_version:
         ifdef   nolcd
         .byte   "(-Dnolcd) "
         endif
-        .byte   "v1.0.0",CR,LF,0
+        .byte   "v1.0.1",CR,LF,0
 
 ;===============================================
 ;       COLD BOOT / RESET ENTRY POINT
@@ -307,6 +307,7 @@ osBootStrap:
         bra     .setup_done
 .sd_ok:
         macro_putz msg_sd_dectected
+        jsr     dizzybox_init
 .setup_done:
 ;===============================================
 ;       Mainloop
