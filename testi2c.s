@@ -36,7 +36,7 @@ main:
         os_monitor_return
 
 
-;         .include "deviceI2c.inc"; TODO make proper kernal interface!
+
 
 LCDInitCmd:
         .word   LCDInit_cmd

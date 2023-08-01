@@ -266,16 +266,6 @@ osBootStrap:
         jsr     RTC_SETUP       ; set clock up and start ticking!
         cli                     ; enable interrupts
 
-
-
-
-
-; init buffers
-        jsr     CLEAR_OS_OUTPUT_BUF
-        stz     osInputBuffer
-        stz     osInputBufferLen; byte pointer to page aligned buffer
-        stz     osUserCmdTable  ; set end of table marker for user commands to monitor
-
         ; current end of Bootstrapping!
 
 ; print banners
@@ -294,7 +284,7 @@ osBootStrap:
         bcc     .rtc_ok
         dey
         bne     .rtc_loop
-        macro_putz msg_rtc_clock_error
+        macro_putz msg_rtc_clock_error; print loaded not ok
         bra     .sd_init
 .rtc_ok:
         jsr     k_print_date_time
@@ -303,17 +293,21 @@ osBootStrap:
 .sd_init:
         jsr     os_sd_init
         bcc     .sd_ok
-        macro_putz msg_sd_not_detected
+        macro_putz msg_sd_not_detected; print loaded not ok
         bra     .setup_done
 .sd_ok:
-        macro_putz msg_sd_dectected
+        macro_putz msg_sd_dectected; print loaded ok
         jsr     dizzybox_init
+        bcs     .setup_done
+        macro_putz msg_dizzybox_init; print loaded ok
 .setup_done:
-;===============================================
-;       Mainloop
-;===============================================
+        ; init buffers
+        jsr     CLEAR_OS_OUTPUT_BUF
+        stz     osInputBuffer
+        stz     osInputBufferLen; byte pointer to page aligned buffer
 
-MAINLOOP:
+        ; this is the main 'shell' to run
+        stz     osUserCmdTable+1; set end of table marker for user commands to monitor
         jmp     MONITOR
 
 ;===============================================
@@ -352,3 +346,5 @@ msg_sd_not_detected:
         .string "error - SD card not detected",CR,LF
 msg_rtc_clock_error:
         .string "error - Real Time Clock not available",CR,LF
+msg_dizzybox_init:
+        .string "Dizzybox SD FAT32 subsytem initialised",CR,LF

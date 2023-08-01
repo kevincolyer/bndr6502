@@ -20,7 +20,7 @@ k_fat32_find_open_dir_ent:
         bcc     .foundsubdir
 
         ; Subdirectory not found
-        lda     #E_DIR_NOT_FOUND
+        lda     #E_DIR_OR_FILE_NOT_FOUND
         sta     os_file_error
         rts
 .foundsubdir:

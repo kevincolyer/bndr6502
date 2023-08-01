@@ -132,7 +132,7 @@ m_cmd_table:
         .word   m_cmd_help_cmd  ; help command at end of rom table - points to start of ram user table
         .word   m_cmd_help
         .word   m_cmd_help_help
-        .word   osUserCmdTable
+        .word   osUserCmdTable  ; points to users command space
 
 
         .byte   0               ; end of table marker
@@ -215,17 +215,17 @@ m_cmd_sd_ls_help:
 m_cmd_sd_run_cmd:
         .byte   "run?",0
 m_cmd_sd_run_help:
-        .byte   "run-sd load prg file",CR,LF,0
+        .byte   "run [file]-sd load prg file",CR,LF,0
 
 m_cmd_sd_cd_cmd:
         .byte   "cd?",0
 m_cmd_sd_cd_help:
-        .byte   "cd-change directory",CR,LF,0
+        .byte   "cd [...]-change directory",CR,LF,0
 
 m_cmd_sd_cat_cmd:
         .byte   "cat?",0
 m_cmd_sd_cat_help:
-        .byte   "cat-print contents of file",CR,LF,0
+        .byte   "cat [file]-print contents of file",CR,LF,0
 
 m_cmd_sd_pwd_cmd:
         .byte   "pwd",0
@@ -235,7 +235,7 @@ m_cmd_sd_pwd_help:
 m_cmd_sd_init_cmd:
         .byte   "init?",0
 m_cmd_sd_init_help:
-        .byte   "init-init -(i)2c (s)d card (f)fat32 (d)dizzybox subsystems",CR,LF,0
+        .byte   "init-init -(i)2c (s)d card (f)at32 (d)izzybox subsystems",CR,LF,0
 
 
 ; searches command table for prefixes of commands
@@ -254,9 +254,9 @@ m_cmd_help:
         lda     #>m_cmd_table
         sta     osR0+1
 
-        ; search for first char in table entry
+        ; search for high byte of next entry (should never be 0)
 .read_entry:
-        ldy     #0
+        ldy     #1
         lda     (osR0),y        ; check at end of table?
         bne     .countOrPrint   ; not at end
 
@@ -356,18 +356,18 @@ m_parse_input:
 
 
 .m_parse_input_main:
-        ; check not at end of cmd table
-        ldy     #$0             ; index of cmds
+        ; check not at end of cmd table (high byte of entry - never a zerp)
+        ldy     #1              ; index of cmds
         lda     (.cmdtable),y   ; check table
         beq     .syntaxerror    ; end of table - no matches
         ; prepare search
         stz     .matchfound     ; used to see if match found
         stz     .following
         ; No so load cmd to compare with
-        sta     .cmpVec
-        iny
-        lda     (.cmdtable),y
         sta     .cmpVec+1
+        ldy     #0
+        lda     (.cmdtable),y
+        sta     .cmpVec
         ldy     #$ff
         ldx     #$ff            ; index of input
 .search1:
@@ -574,7 +574,7 @@ m_add_user_cmd:
         ldx     #0
         stx     .atEnd
 .loop:
-        lda     osUserCmdTable,x; at end of table?
+        lda     osUserCmdTable+1,x; at end of table?
         beq     .addHere        ; yes, add entry here
 
         ; no, so compare the command with the one we are adding
@@ -664,7 +664,7 @@ m_add_user_cmd:
 
 
 m_cmd_clearusercommands:
-        stz     osUserCmdTable
+        stz     osUserCmdTable+1
         macro_putz msg_monitor_clearedusercommands
         jmp     m_prompt
 
@@ -746,7 +746,7 @@ msg_error_enum_list:
         .string "E_OK"
         .string "E_ERROR"
         .string "E_SD_NOT_FOUND"
-        .string "E_DIR_NOT_FOUND"
+        .string "E_DIR_OR_FILE_NOT_FOUND"
         .string "E_FILE_NOT_FOUND"
         .string "E_FS_READ_ERROR"
         .string "E_FS_WRITE_ERROR"

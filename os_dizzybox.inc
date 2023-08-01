@@ -216,7 +216,14 @@ dizzybox_cat:
         jsr     fat32_file_readbyte
         ply
         bcs     .return         ; found end of file marker
+        pha
         jsr     ACIA_putc
+        pla
+        cmp     #NL
+        bne     .move_on
+        lda     #CR             ; add extra CR if we fine a NL in case of unix endings
+        jsr     ACIA_putc
+.move_on
         iny
         cpy     #80             ; todo paging here?
         bne     .loop

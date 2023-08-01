@@ -179,25 +179,21 @@ rtc_reading_cc:
 rtc_reading_dow:
         blk     3
 
-subdirname:                     ; used in os_file_functions.inc
+subdirname:                     ; used in os_file_functions.inc TODO ?????????
         blk     14
 filename:                       ; dizzybox
         blk     14
-        byt                     ; just in case
+
 os_file_error:
         byt
 dizzybox_init_ok:               ; > 0 is NOT initialised ok.
         byt
 dizzybox_case_insensitive:      ; 0 case in sensitive 1 sensitive (default 0 in dizzybox_init)
         byt
-        ; TODO - move to memorymap
-
-        .align  8               ; align to page boundary
-
 current_path_len:               ; dizzybox
-        .byt
+        byt
 temp_path_len:                  ; dizzybox
-        .byt
+        byt
         .dend
 
 ;--------------------------------------------

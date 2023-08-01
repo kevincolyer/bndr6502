@@ -10,7 +10,7 @@ buffer=$2000
         .org    userStart       ; expected org
 
 ; userZp - origin of user zero page
-; userLowMem - origin of user low mem space ~$600 to userStart
+; userLowMem - origin of user low mem space ~$100 to userStart
 
 main:
         ; load monitor command to monitor
@@ -20,17 +20,11 @@ main:
         macro_store_symbol2word sd_test,osCallArg0
         macro_oscall oscMonitorAddCmd
 
-        ; jsr     dizzybox_init
-        ; bcs     .quit
-
         macro_print "Dizzybox initialised",CR,LF
 
 .quit:
         os_monitor_return
 
-        ;.include "os_file_functions.inc"
-        ;.include "libfat32.inc"
-        ;    .include "os_dizzybox.inc"
 
 sdoldtest:
         .word   sdoldtest_cmd_cmd
