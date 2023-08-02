@@ -31,7 +31,7 @@ os_snake_main:
         ; intialise
 
 
-        jsr     CLEAR_OS_OUTPUT_BUF
+        jsr     k_clear_os_output_buffer
 
         ; cursor off, home and cls
         macro_putz osvt_home
@@ -65,7 +65,7 @@ os_snake_main:
         sta     .sy
         jsr     .printVTmovecursor
         lda     #'o'
-        jsr     PUSH_BYTE_TO_OS_OUTPUT_BUF
+        jsr     k_putc_os_output_buf
         dex
         cpx     #1
         bne     .iloop2
@@ -73,8 +73,8 @@ os_snake_main:
         stx     .snake_rb_t     ; tail pointer
         lda     #1
         sta     .snakedir       ; set direction of snake to right
-        jsr     PUT_OS_OUTPUT_BUF
-        jsr     CLEAR_OS_OUTPUT_BUF
+        jsr     k_ACIA_print_os_output_buf
+        jsr     k_clear_os_output_buffer
         macro_putz osvt_fg_White
         jsr     .print_score    ; (also puts and flushes output buffer)
 
@@ -84,7 +84,7 @@ os_snake_main:
 
 .mainloop:
         clc
-        jsr     ACIA_getc
+        jsr     k_ACIA_getc
         bcc     .nokey
         cmp     #"q"
         beq     .exit
@@ -112,7 +112,7 @@ os_snake_main:
         macro_putz osvt_fgbg_reset
         macro_putz osvt_home
         macro_putz osvt_cls
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 .nokey:
         ; move snake
@@ -127,17 +127,17 @@ os_snake_main:
         jsr     .printVTmovecursor
         ; paint head with a segment
         lda     #'o'
-        jsr     PUSH_BYTE_TO_OS_OUTPUT_BUF
+        jsr     k_putc_os_output_buf
         ; move in given direction
         ; .sx and .sy have old head - now move to new head.
         lda     .snakedir
         jsr     .sxsydir
         jsr     .printVTmovecursor
         ; paint head
-        jsr     PUT_OS_OUTPUT_BUF
+        jsr     k_ACIA_print_os_output_buf
         macro_putz osvt_fg_Red
         lda     #'@'
-        jsr     PUSH_BYTE_TO_OS_OUTPUT_BUF
+        jsr     k_putc_os_output_buf
         ; push into buffer
         ldx     .snake_rb_h
         inx
@@ -170,10 +170,10 @@ os_snake_main:
         ; paint with space
         jsr     .printVTmovecursor
         lda     #SPACE
-        jsr     PUSH_BYTE_TO_OS_OUTPUT_BUF
+        jsr     k_putc_os_output_buf
 .flush_buffers
-        jsr     PUT_OS_OUTPUT_BUF
-        jsr     CLEAR_OS_OUTPUT_BUF
+        jsr     k_ACIA_print_os_output_buf
+        jsr     k_clear_os_output_buffer
         ; handle collisions
         ldx     .snake_rb_h
         lda     .snake_x,x
@@ -197,7 +197,7 @@ os_snake_main:
 .no_colls
         ; sleep and finish loop
         lda     #7
-        jsr     osSleep10ms     ; sleep 7x10ms
+        jsr     k_sleep_10_ms   ; sleep 7x10ms
         jmp     .mainloop       ; back to top
         ; end main loop
 
@@ -213,7 +213,7 @@ os_snake_main:
 
 
 
-; preserves X and Y (as does PUSH_BYTE_TO_OS_OUTPUT_BUF)
+; preserves X and Y (as does k_putc_os_output_buf)
 .printbcd:
         phx
         pha
@@ -225,14 +225,14 @@ os_snake_main:
         lda     .decimals,x
         cmp     #'0'
         beq     .skiptens       ; avoid leading zeros.
-        jsr     PUSH_BYTE_TO_OS_OUTPUT_BUF
+        jsr     k_putc_os_output_buf
 .skiptens:
         pla
         and     #$f
         tax
         lda     .decimals,x
         plx
-        jmp     PUSH_BYTE_TO_OS_OUTPUT_BUF
+        jmp     k_putc_os_output_buf
 .decimals:
         .byte   "0123456789abcdef"
 .dx:
@@ -256,17 +256,17 @@ os_snake_main:
 
 .printVTmovecursor:
         lda     #ESC            ; print cursor move sequence
-        jsr     PUSH_BYTE_TO_OS_OUTPUT_BUF
+        jsr     k_putc_os_output_buf
         lda     #"["
-        jsr     PUSH_BYTE_TO_OS_OUTPUT_BUF
+        jsr     k_putc_os_output_buf
         lda     .sy
         jsr     .printbcd
         lda     #";"
-        jsr     PUSH_BYTE_TO_OS_OUTPUT_BUF
+        jsr     k_putc_os_output_buf
         lda     .sx
         jsr     .printbcd
         lda     #"H"
-        jmp     PUSH_BYTE_TO_OS_OUTPUT_BUF
+        jmp     k_putc_os_output_buf
 
 ; .savecursor:
 ;         .byte   ESC,"7",0
@@ -295,7 +295,7 @@ os_snake_main:
         macro_putz osvt_fgbg_reset
         macro_putz .snake_win_msg
         lda     #$80
-        jsr     osSleep10ms
+        jsr     k_sleep_10_ms
         jmp     .exit
 
 .snake_draw_screen:
@@ -305,14 +305,14 @@ os_snake_main:
         lda     #1
         sta     .sy
         jsr     .printVTmovecursor
-        jsr     PUT_OS_OUTPUT_BUF
+        jsr     k_ACIA_print_os_output_buf
         macro_putz osvt_fg_White
         macro_putz .snake_topline_msg
 
         lda     #.MINY
         sta     .sy
         jsr     .printVTmovecursor
-        jsr     PUT_OS_OUTPUT_BUF
+        jsr     k_ACIA_print_os_output_buf
         macro_putz osvt_bg_Green
         macro_putz osvt_fg_White
         ; skip a line for score
@@ -321,24 +321,24 @@ os_snake_main:
         ldx     #.MAXX+1
 .sds_loop1:
         lda     #'#'
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         dex
         cpx     #.MINX
         bne     .sds_loop1
-        jsr     ACIA_putc_CRLF
+        jsr     k_ACIA_putc_crlf
         inc     .sy
         ; draw mid fences
         ldy     #.MAXY-.MINY+1+2
 .sds_loop2:
         lda     #'#'
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         phy
         macro_putz osvt_fgbg_reset
         ply
         ldx     #.MAXX
 .sds_loop2i:
         lda     #SPACE
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         dex
         cpx     #.MINX+1
         bne     .sds_loop2i
@@ -349,8 +349,8 @@ os_snake_main:
         plx
         ply
         lda     #'#'
-        jsr     ACIA_putc
-        jsr     ACIA_putc_CRLF
+        jsr     k_ACIA_putc
+        jsr     k_ACIA_putc_crlf
         dey
         cpy     .sy
         bne     .sds_loop2
@@ -358,11 +358,11 @@ os_snake_main:
         ldx     #.MAXX+1
 .sds_loop3:
         lda     #'#'
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         dex
         cpx     #.MINX
         bne     .sds_loop3
-        jsr     ACIA_putc_CRLF
+        jsr     k_ACIA_putc_crlf
         rts
 
 ; adds A to score
@@ -390,8 +390,8 @@ os_snake_main:
 .scoreskip:
         lda     .scorelo
         jsr     .printbcd
-        jsr     PUT_OS_OUTPUT_BUF
-        jmp     CLEAR_OS_OUTPUT_BUF
+        jsr     k_ACIA_print_os_output_buf
+        jmp     k_clear_os_output_buffer
 
 ; collision detection
 ; X holds x coord and Y coord - they are BCD but just comparing eqaulity
@@ -443,16 +443,16 @@ os_snake_main:
         stz     .gx
         stz     .gy
         lda     #.MAXX-.MINX-2
-        jsr     osRandonNumberUpTo
+        jsr     k_random_up_to
         sec
         adc     #.MINX
-        jsr     bin2bcd
+        jsr     k_bin_to_bcd
         sta     .sx
         lda     #.MAXY-.MINY-2
-        jsr     osRandonNumberUpTo
+        jsr     k_random_up_to
         sec
         adc     #.MINY+1
-        jsr     bin2bcd
+        jsr     k_bin_to_bcd
         sta     .sy
         ldx     .sx
         tay
@@ -466,9 +466,9 @@ os_snake_main:
         macro_putz osvt_fg_Red
         jsr     .printVTmovecursor
         lda     #'%'
-        jsr     PUSH_BYTE_TO_OS_OUTPUT_BUF
-        jsr     PUT_OS_OUTPUT_BUF
-        jmp     CLEAR_OS_OUTPUT_BUF
+        jsr     k_putc_os_output_buf
+        jsr     k_ACIA_print_os_output_buf
+        jmp     k_clear_os_output_buffer
 
 ; call with coords in .sx and .sy and A holding direction index
 .sxsydir:
@@ -513,8 +513,8 @@ os_snake_main:
 .snake_await_loop:
         inc     .randomseed     ; get some entropy from user
         lda     .randomseed
-        jsr     osRandomise
-        jsr     ACIA_getc
+        jsr     k_seed_random
+        jsr     k_ACIA_getc
         bcc     .snake_await_loop; no key
         cmp     #'q'
         beq     .snakeawaitend  ; on return checks for 'q' in A
@@ -529,17 +529,17 @@ os_snake_main:
 .centertext:
         lda     #.MAXY
         lsr                     ;div2
-        jsr     bin2bcd
+        jsr     k_bin_to_bcd
         sta     .sy
         lda     #.MAXX
         sec
         sbc     #16
         lsr
-        jsr     bin2bcd
+        jsr     k_bin_to_bcd
         sta     .sx
         jsr     .printVTmovecursor
-        jsr     PUT_OS_OUTPUT_BUF
-        jsr     CLEAR_OS_OUTPUT_BUF
+        jsr     k_ACIA_print_os_output_buf
+        jsr     k_clear_os_output_buffer
         rts
 
 .cleartext:
@@ -556,9 +556,9 @@ os_snake_main:
         jsr     .centertext
         macro_putz .snake_lose_msg
         lda     #$40
-        jsr     osSleep10ms     ; little pause!
+        jsr     k_sleep_10_ms   ; little pause!
 .dd_await_loop:
-        jsr     ACIA_getc
+        jsr     k_ACIA_getc
         bcc     .dd_await_loop  ; no key
         cmp     #'q'
         beq     .dd_await_end   ; on return checks for 'q' in A

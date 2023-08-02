@@ -50,7 +50,7 @@ i2c_wait10ms:
         phx
 .waitloop:
         stz     osR0            ; this just helps the watchdog not reset the board! (rw activity)
-        jmp     ACIA_getc       ; get out
+        jmp     k_ACIA_getc     ; get out
 
         bcs     .return
         lda     os_rtc_countdown
@@ -373,11 +373,11 @@ i2c_write_byte:
         sta     i2c_v_byte
         .ifdef  debug
         txa                     ; debug
-        jmp     ACIA_putc_hex_byte;  macro_oscall oscPutHexByte; debug
+        jmp     k_ACIA_putc_Hex_Byte;  macro_oscall oscPutHexByte; debug
         lda     i2c_v_byte      ; debug
-        jmp     ACIA_putc_hex_byte; macro_oscall oscPutHexByte; debug
+        jmp     k_ACIA_putc_Hex_Byte; macro_oscall oscPutHexByte; debug
         lda     #SPACE
-        jmp     ACIA_putc       ;macro_oscall oscPutC; debug
+        jmp     k_ACIA_putc     ;macro_oscall oscPutC; debug
         .endif
         ;   if (send_start) {
         ;     i2c_start_cond();
@@ -457,6 +457,6 @@ i2c_read_byte:
         lda     i2c_v_byte
         clc
         .ifdef  debug
-        jmp     ACIA_putc_hex_byte; macro_oscall oscPutHexByte; debug
+        jmp     k_ACIA_putc_Hex_Byte; macro_oscall oscPutHexByte; debug
         .endif
         rts

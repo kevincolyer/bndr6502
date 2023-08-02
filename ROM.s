@@ -16,7 +16,7 @@
         .macro  macro_putz,zstring
         ldx     #<\zstring
         ldy     #>\zstring
-        jsr     ACIA_putZ_XY
+        jsr     k_ACIA_putz
         .endm
 
         .macro  macro_putz_safe,zstring
@@ -24,7 +24,7 @@
         phx
         ldx     #<\zstring
         ldy     #>\zstring
-        jsr     ACIA_putZ_XY
+        jsr     k_ACIA_putz
         plx
         ply
         .endm
@@ -32,7 +32,7 @@
         ; kernal version simple print one char
         .macro  k_macro_print_c,char
         lda     #\char
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         .endm
 
 ; HARDWARE rom vectors
@@ -65,7 +65,7 @@
 ; invalidates ALL registers: save before using
 
 
-
+        ; DEPRECATED!!!
 osCallDispatch:
         clc                     ;
         jmp     (osCallVectorTable,x)
@@ -74,42 +74,42 @@ osCallDispatch:
         ;       USERSPACE CALLABLE ROUTINES
         ;===============================================
 
-
+        ; DEPRECATED!!!
 osCallVectorTable:
         ;0
-        .word   ACIA_putc
+        .word   k_ACIA_putc
         ;2
-        .word   ACIA_getc       ; for indirection... (y will be preserved)
+        .word   k_ACIA_getc     ; for indirection... (y will be preserved)
         ;4
-        .word   ACIA_putZ_XY    ; puts a 0 terminated message - x = lo byte, y =hi byte
+        .word   k_ACIA_putz     ; puts a 0 terminated message - x = lo byte, y =hi byte
         ;6
-        .word   ACIA_putc_CRLF  ; output CR and LF
+        .word   k_ACIA_putc_crlf; output CR and LF
         ;8
-        .word   CLEAR_OS_OUTPUT_BUF
+        .word   k_clear_os_output_buffer
         ;10
-        .word   PUT_OS_OUTPUT_BUF; print 0 terminated os output buffer
+        .word   k_ACIA_print_os_output_buf; print 0 terminated os output buffer
         ;12
-        .word   PUSH_BYTE_TO_OS_OUTPUT_BUF
+        .word   k_putc_os_output_buf
         ;14
-        .word   CMP_STRING_WITH_OS_OUTPUTBUF
+        .word   k_string_cmp_to_os_output_buf
         ;16
-        .word   m_prompt        ; jump back into monitor (warm) NOTE JUMP!!!!
+        .word   k_monitor_prompt; jump back into monitor (warm) NOTE JUMP!!!!
         ;18
-        .word   ACIA_putc_hex_byte
+        .word   k_ACIA_putc_Hex_Byte
         ;20
-        .word   ACIA_putZ_osCallArg0; puts a 0 terminated message - osCallArg0
+        .word   k_ACIA_putz_osCallArg0; puts a 0 terminated message - osCallArg0
         ;22
-        .word   CLEAR_OS_INPUT_BUF
+        .word   k_clear_os_input_buf
         ;24
-        .word   osLineEditInputBuf
+        .word   k_line_editor
         ;26
-        .word   osWord2DecimalString
+        .word   k_string_word_to_decimal
         ;28
-        .word   osZStrCopy
+        .word   k_string_z_copy
         ;30
-        .word   m_add_user_cmd
+        .word   k_monitor_add_user_cmd
         ;32
-        .word   bin2bcd
+        .word   k_bin_to_bcd
 
         .string "BNDR Rom"
 
@@ -191,6 +191,66 @@ os_fat32_valid_filename_chars:
 ;         jmp     k_fat32_is_filename_valid
 os_fat32_is_valid_filename_char:
         jmp     k_fat32_is_valid_filename_char
+os_sleep_10_ms:
+        jmp     k_sleep_10_ms
+os_bcd_to_bin:
+        jmp     k_bcd_to_bin
+os_seed_random:
+        jmp     k_seed_random
+os_random:
+        jmp     k_random
+os_random_up_to:
+        jmp     k_random_up_to
+os_is_decimal:
+        jmp     k_is_decimal
+os_is_hex_byte:
+        jmp     k_is_hex_byte
+os_rtc_setup:
+        jmp     k_rtc_setup
+os_rtc_on:
+        jmp     k_rtc_on
+os_rtc_off:
+        jmp     k_rtc_off
+os_ACIA_putc:
+        jmp     k_ACIA_putc
+os_ACIA_getc:                   ; for indirection.
+        jmp     k_ACIA_getc     ; for indirection... (y will be preserved)
+os_ACIA_putz:                   ; puts a 0 terminated
+        jmp     k_ACIA_putz     ; puts a 0 terminated message - x = lo byte,
+os_ACIA_putc_crlf:              ; output CR and LF
+        jmp     k_ACIA_putc_crlf; output CR and LF
+os_clear_os_output_buffer:
+        jmp     k_clear_os_output_buffer
+os_ACIA_print_os_output_buf:    ; print 0
+        jmp     k_ACIA_print_os_output_buf; print 0 terminated os output buf
+os_putc_os_output_buf:
+        jmp     k_putc_os_output_buf
+os_string_cmp_to_os_output_buf:
+        jmp     k_string_cmp_to_os_output_buf
+os_monitor_prompt:              ; jump back
+        jmp     k_monitor_prompt; jump back into monitor (warm) NOTE
+os_ACIA_putc_Hex_Byte:
+        jmp     k_ACIA_putc_Hex_Byte
+os_ACIA_putz_osCallArg0:        ; puts a 0 ter
+        jmp     k_ACIA_putz_osCallArg0; puts a 0 terminated message - osCall
+os_clear_os_input_buf:
+        jmp     k_clear_os_input_buf
+os_line_editor:
+        jmp     k_line_editor
+os_string_word_to_decimal:
+        jmp     k_string_word_to_decimal
+os_string_z_copy:
+        jmp     k_string_z_copy
+os_monitor_add_user_cmd:
+        jmp     k_monitor_add_user_cmd
+os_bin_to_bcd:
+        jmp     k_bin_to_bcd
+os_yield:
+        jmp     k_yield
+
+
+
+
 
 ;
 ; os_fat32_open_dir:
@@ -206,10 +266,6 @@ os_fat32_is_valid_filename_char:
 ; os_free:
 ; os_zp_malloc:
 ; os_zp_free:
-
-os_is_decimal:
-        jmp     k_is_decimal
-
 ;;;;AUTOEXPORTEND
 
 
@@ -263,7 +319,7 @@ osBootStrap:
         lda     #>irq_builtin
         sta     osSoftIrqVector+1
 
-        jsr     RTC_SETUP       ; set clock up and start ticking!
+        jsr     k_rtc_setup     ; set clock up and start ticking!
         cli                     ; enable interrupts
 
         ; current end of Bootstrapping!
@@ -302,7 +358,7 @@ osBootStrap:
         macro_putz msg_dizzybox_init; print loaded ok
 .setup_done:
         ; init buffers
-        jsr     CLEAR_OS_OUTPUT_BUF
+        jsr     k_clear_os_output_buffer
         stz     osInputBuffer
         stz     osInputBufferLen; byte pointer to page aligned buffer
 
@@ -328,6 +384,7 @@ osBootStrap:
         .include "os_file_functions.inc"
         .include "libfat32.inc"
         .include "os_dizzybox.inc"
+        .include "os_scheduler.inc"
 
 ;===============================================
 ;       VARIOUS STRINGS

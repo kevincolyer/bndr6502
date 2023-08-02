@@ -135,7 +135,7 @@ k_executable_load:
         inc     .load+1
         bne     .loop
 .eof:
-        jsr     ACIA_putc_CRLF
+        jsr     k_ACIA_putc_crlf
         rts                     ; all ok, end of file
 .error:
         sec

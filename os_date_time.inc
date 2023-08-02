@@ -2,23 +2,23 @@ k_date_get:
         phx
         phy
         lda     os_rtc_DAY
-        jsr     bin2bcd
-        jsr     ACIA_putc_hex_byte
+        jsr     k_bin_to_bcd
+        jsr     k_ACIA_putc_Hex_Byte
         lda     #'/'
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
 
         lda     os_rtc_MONTH
-        jsr     bin2bcd
-        jsr     ACIA_putc_hex_byte
+        jsr     k_bin_to_bcd
+        jsr     k_ACIA_putc_Hex_Byte
         lda     #'/'
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
 
         lda     os_rtc_YEAR
-        jsr     bin2bcd
-        jsr     ACIA_putc_hex_byte
+        jsr     k_bin_to_bcd
+        jsr     k_ACIA_putc_Hex_Byte
 
         lda     #SPACE
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
 
         clc
         lda     os_rtc_DOW
@@ -29,7 +29,7 @@ k_date_get:
 .print_dow:
         lda     dow_table,x
         phx
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         plx
         inx
         dey
@@ -42,35 +42,35 @@ k_date_get:
 
 k_time_get:
         lda     os_rtc_HOURS
-        jsr     bin2bcd
-        jsr     ACIA_putc_hex_byte
+        jsr     k_bin_to_bcd
+        jsr     k_ACIA_putc_Hex_Byte
         lda     #':'
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
 
         lda     os_rtc_MINUTES
-        jsr     bin2bcd
-        jsr     ACIA_putc_hex_byte
+        jsr     k_bin_to_bcd
+        jsr     k_ACIA_putc_Hex_Byte
         lda     #':'
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
 
         lda     os_rtc_SECONDS
-        jsr     bin2bcd
-        jsr     ACIA_putc_hex_byte
+        jsr     k_bin_to_bcd
+        jsr     k_ACIA_putc_Hex_Byte
 
         rts
 
 k_print_date_time:
         macro_store_symbol2word rtc_date_msg,osCallArg0
-        jsr     ACIA_putZ_osCallArg0
+        jsr     k_ACIA_putz_osCallArg0
 
         jsr     k_time_get
 
         lda     #SPACE
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
 
         jsr     k_date_get
 
-        jsr     ACIA_putc_CRLF
+        jsr     k_ACIA_putc_crlf
         rts
 
 ;READ GET
@@ -130,9 +130,9 @@ k_rtc_get_i2c:
         pha
         jsr     os_i2c_stop_cond
         pla
-        jsr     ACIA_putc_hex_byte
+        jsr     k_ACIA_putc_Hex_Byte
         macro_store_symbol2word rtc_err_msg,osCallArg0
-        jsr     ACIA_putZ_osCallArg0
+        jsr     k_ACIA_putz_osCallArg0
 
         sec
         ply
@@ -142,35 +142,35 @@ k_rtc_get_i2c:
 k_date_set:
         sei
         lda     rtc_reading+2
-        jsr     bcd2bin
+        jsr     k_bcd_to_bin
         sta     os_rtc_SECONDS
 
         lda     rtc_reading+1
-        jsr     bcd2bin
+        jsr     k_bcd_to_bin
         sta     os_rtc_MINUTES
 
         lda     rtc_reading
-        jsr     bcd2bin
+        jsr     k_bcd_to_bin
         sta     os_rtc_HOURS
 
         lda     rtc_reading+3
-        jsr     bcd2bin
+        jsr     k_bcd_to_bin
         sta     os_rtc_DAY
 
         lda     rtc_reading+4
-        jsr     bcd2bin
+        jsr     k_bcd_to_bin
         sta     os_rtc_MONTH
 
         lda     rtc_reading+6
-        jsr     bcd2bin
+        jsr     k_bcd_to_bin
         sta     os_rtc_YEAR
 
         lda     rtc_reading+5
-        jsr     bcd2bin
+        jsr     k_bcd_to_bin
         sta     os_rtc_CENTURY
 
         lda     rtc_reading+7
-        jsr     bcd2bin
+        jsr     k_bcd_to_bin
         sta     os_rtc_DOW
         lda     #1
         sta     os_rtc_set
@@ -179,15 +179,15 @@ k_date_set:
 
 k_parse_set_date:
         macro_store_symbol2word rtc_set_date_msg,osCallArg0
-        jsr     ACIA_putZ_osCallArg0
+        jsr     k_ACIA_putz_osCallArg0
 
-        jsr     CLEAR_OS_INPUT_BUF
+        jsr     k_clear_os_input_buf
         lda     #80
         sta     osCallArg0
-        jsr     osLineEditInputBuf
+        jsr     k_line_editor
 
         ; parse to rtc reading
-        ldx     #0              ; index to oscCLEAR_OS_INPUT_BUF
+        ldx     #0              ; index to osck_clear_os_input_buf
         ldy     #0              ; (read counter 7)
 .parse:
         lda     osInputBuffer,x ; upper nybble byte 1
@@ -226,10 +226,10 @@ k_parse_set_date:
 
 .parse_error:
         txa
-        jsr     bin2bcd
-        jsr     ACIA_putc_hex_byte
+        jsr     k_bin_to_bcd
+        jsr     k_ACIA_putc_Hex_Byte
         macro_store_symbol2word rtc_syntax_error,osCallArg0
-        jsr     ACIA_putZ_osCallArg0
+        jsr     k_ACIA_putz_osCallArg0
         sec
         rts
 
@@ -276,9 +276,9 @@ k_rtc_set_i2c:
         pha
         jsr     os_i2c_stop_cond
         pla
-        jsr     ACIA_putc_hex_byte
+        jsr     k_ACIA_putc_Hex_Byte
         macro_store_symbol2word rtc_err_msg,osCallArg0
-        jsr     ACIA_putZ_osCallArg0
+        jsr     k_ACIA_putz_osCallArg0
         sec
         rts
 

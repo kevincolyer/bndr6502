@@ -33,7 +33,7 @@ ACIA_Init:                      ;
         ;
         ; input chr from ACIA (no waiting)
         ; Pereserves x and y
-ACIA_getc:
+k_ACIA_getc:
 Get_Chr:
         clc                     ; clear = no chr present
         lda     ACIA_Status     ; get Serial port status
@@ -46,7 +46,7 @@ Get_Chr:
         ;
         ; output to OutPut Port
         ;
-ACIA_putc:
+k_ACIA_putc:
 Put_Chr:
         pha                     ; save registers
 .Put_Chr1:

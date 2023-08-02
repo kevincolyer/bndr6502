@@ -2,7 +2,7 @@
 ; calculates timing from systemclock constant
 ; calc=TODO
 
-osSleep10ms:
+k_sleep_10_ms:
         phy
         phx
 .outerloop:
@@ -27,13 +27,13 @@ osSleep10ms:
 ; uses osR0 as scratch space
 ; no overflow detection!
 ;-----------------------------
-bin2bcd:
+k_bin_to_bcd:
         phy
         clc
         ldy     #8              ; 8 times through
         sta     osR0            ; bin to convert
         stz     osR0+1          ; bcd output init
-.bin2bcdloop:
+.k_bin_to_bcdloop:
         asl     osR0            ; shift msb to carry
         sed
         lda     osR0+1          ; bcd
@@ -41,11 +41,11 @@ bin2bcd:
         sta     osR0+1
         cld
         dey
-        bne     .bin2bcdloop
+        bne     .k_bin_to_bcdloop
         ply                     ; done
         rts
 
-bcd2bin:
+k_bcd_to_bin:
         pha                     ; stash for now
         and     #$f0            ; mask upper nybble
         lsr
@@ -65,7 +65,7 @@ bcd2bin:
 
 
 ; sets random seed from A
-osRandomise:
+k_seed_random:
         sta     osRandomSeed
 ;        eor     #<.magic
         sta     osRandomSeed+1
@@ -73,7 +73,7 @@ osRandomise:
 
 ; returns a random byte from pseudo random generator
 ; from https://codebase64.org/doku.php?id=base:small_fast_16-bit_prng
-osRandomNumber:
+k_random:
 
 .magic=$002d
 
@@ -111,11 +111,11 @@ osRandomNumber:
         rts
 
 ; Limit in A of number to choose up to but not equal.
-osRandonNumberUpTo:
+k_random_up_to:
         sta     osR0
         beq     .done           ; if a =0 quit!
 .getanumber:
-        jsr     osRandomNumber
+        jsr     k_random
         cmp     osR0            ; less than asked for?
         bcs     .getanumber
 .done:
@@ -126,7 +126,7 @@ osRandonNumberUpTo:
 ;-----------------------------------------------
 ; output a hex byte
 ;-----------------------------------------------
-ACIA_putc_hex_byte:
+k_ACIA_putc_Hex_Byte:
         pha                     ; store for later
         clc
         lsr
@@ -135,12 +135,12 @@ ACIA_putc_hex_byte:
         lsr                     ; shift higher to lower nybble
         tax
         lda     tableHexDigit,x
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         pla
         and     #$f             ; mask lower nybble
         tax
         lda     tableHexDigit,x
-        jmp     ACIA_putc
+        jmp     k_ACIA_putc
 decimals_table:
 tableHexDigit:
         .byte   "0123456789abcdef",0
@@ -164,10 +164,10 @@ k_is_decimal:
 ; carry set on failure
 ; returns in A the value of hex nybble
 ; preserves x
-osIsHexByte:
+k_is_hex_byte:
         phx
         ldx     #15
-osIsHexByteEntry2:
+_k_is_hex_byteEntry2:
 .ishex:
         cmp     tableHexDigit,x
         beq     .gotit
@@ -182,31 +182,24 @@ osIsHexByteEntry2:
         plx
         rts
 
-; carry set on failure
-; returns in A the value of hex nybble
-; preserves x
-osIsDecimal:
-        pha
-        lda     #9
-        bra     osIsHexByteEntry2
 ;-----------------------------------------------
 ; print a z terminated string located in x and y
 ;-----------------------------------------------
-; puts a zero terminate string in R0 (x lo byte, y high byte) and calls ACIA_putc_z
-ACIA_putZ_XY:
+; puts a zero terminate string in R0 (x lo byte, y high byte) and callsk_ACIA_putc_z
+k_ACIA_putz:
         stx     R0              ; lo byte
         sty     R0+1            ; high byte
-        ; jmp ACIA_putc_z              ; fall through
+        ; jmpk_ACIA_putc_z              ; fall through
         ; putc zero terminated string
         ; R0 holds buffer
         ; preserves y
-ACIA_putc_z:
+k_ACIA_putc_z:
         phy
         ldy     #0
 .loop:
         lda     (R0),y
         beq     .done
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         iny
         bne     .loop
 .done:
@@ -216,13 +209,13 @@ ACIA_putc_z:
 ;-----------------------------------------------
 ; print a z terminated string in osCallArg0
 ;-----------------------------------------------
-ACIA_putZ_osCallArg0:
+k_ACIA_putz_osCallArg0:
         phy
         ldy     #0
 .loop:
         lda     (osCallArg0),y
         beq     .done
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         iny
         bne     .loop
 .done:
@@ -232,16 +225,16 @@ ACIA_putZ_osCallArg0:
 ;-----------------------------------------------
 ; put a crlf
 ;-----------------------------------------------
-ACIA_putc_CRLF:
+k_ACIA_putc_crlf:
         lda     #CR
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         lda     #LF
-        jmp     ACIA_putc
+        jmp     k_ACIA_putc
 
 ;-----------------------------------------------
 ;
 ;-----------------------------------------------
-CLEAR_OS_OUTPUT_BUF:
+k_clear_os_output_buffer:
         stz     osOutputBufferLen
         stz     osOutputBuffer
         rts
@@ -249,7 +242,7 @@ CLEAR_OS_OUTPUT_BUF:
 ;-----------------------------------------------
 ;
 ;-----------------------------------------------
-CLEAR_OS_INPUT_BUF:
+k_clear_os_input_buf:
         stz     osInputBufferLen
         stz     osInputBuffer
         rts
@@ -257,12 +250,12 @@ CLEAR_OS_INPUT_BUF:
 ;-----------------------------------------------
 ;
 ;-----------------------------------------------
-PUT_OS_OUTPUT_BUF:
+k_ACIA_print_os_output_buf:
         phx
         phy
         ldx     #<osOutputBuffer
         ldy     #>osOutputBuffer
-        jsr     ACIA_putZ_XY
+        jsr     k_ACIA_putz
         stz     osOutputBuffer
         stz     osOutputBufferLen
         ply
@@ -273,7 +266,7 @@ PUT_OS_OUTPUT_BUF:
 ;
 ;-----------------------------------------------
 ; preserves X Y
-PUSH_BYTE_TO_OS_OUTPUT_BUF:
+k_putc_os_output_buf:
         phx
         ldx     osOutputBufferLen
         cpx     #$FF            ; is buffer full?
@@ -295,7 +288,7 @@ PUSH_BYTE_TO_OS_OUTPUT_BUF:
 ;-----------------------------------------------
 ; Preserves Y
 ; returns carry set if match
-CMP_STRING_WITH_OS_OUTPUTBUF:
+k_string_cmp_to_os_output_buf:
         phy
         sta     R0
         stx     R0+1
@@ -328,11 +321,11 @@ CMP_STRING_WITH_OS_OUTPUTBUF:
 ;-----------------------------------------------
 ; Inputbuffer is 256 bytes but Arg0 set's max length (e.g. screen width)
 
-osLineEditInputBuf:
-        jsr     CLEAR_OS_INPUT_BUF
+k_line_editor:
+        jsr     k_clear_os_input_buf
 ; get a char
 .getachar:
-        jsr     ACIA_getc
+        jsr     k_ACIA_getc
         bcc     .getachar
 ; if backspace try rubout
         cmp     #DEL
@@ -344,7 +337,7 @@ osLineEditInputBuf:
 ;         cmp     #LF     ;debug
 ;         beq     .gotalf     ;debug
 ; otherwise add to buffer and echo
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         ldx     osInputBufferLen
         sta     osInputBuffer,x
         inx
@@ -355,17 +348,17 @@ osLineEditInputBuf:
         bra     .getachar
         ;
         ; .gotalf:     ;debug
-        ;         jsr ACIA_putc_hex_byte     ;debug
+        ;         jsr k_ACIA_putc_Hex_Byte     ;debug
         ;         bra .getachar     ;debug
         ; if cr return
 .return:
-        ;         jsr ACIA_putc_hex_byte     ;debug
+        ;         jsr k_ACIA_putc_Hex_Byte     ;debug
         stz     osCallArg0+1    ; mark as ok return
         ;swallow any lf following
         ; .returnloop:
-        ;         jsr ACIA_getc
+        ;         jsr k_ACIA_getc
         ;         bcc .returnloop
-        ;         jsr ACIA_putc_hex_byte
+        ;         jsr k_ACIA_putc_Hex_Byte
         bra     .preparereturn
         ; if at max length return
 .maxLength:
@@ -374,9 +367,9 @@ osLineEditInputBuf:
         ldx     osInputBufferLen
         stz     osInputBuffer,x
         lda     #CR
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         lda     #LF
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         ; check we need to signal error
         lda     osCallArg0+1
         beq     .end
@@ -409,7 +402,7 @@ osLineEditInputBuf:
 ; osArgCall1 has pad character of 0 or 'whatever'
 ; result in consecutive bytes osArgCall0,osArgCall1,osArgCall2 z terminated
 ; modified from https://beebwiki.mdfs.net/Number_output_in_6502_machine_code
-osWord2DecimalString:
+k_string_word_to_decimal:
         ; On entry,
         ;           osCallArg0 = vector of buffer to print to
         ;           osCallArg1 = number to print
@@ -481,7 +474,7 @@ osWord2DecimalString:
 ; copy z terminated string osCallArg0 to osCallArg1
 ;-----------------------------------------------
 ; NOTE 256 bytes MAX
-osZStrCopy:
+k_string_z_copy:
         ldy     #0
 .loop:
         lda     (osCallArg0),y

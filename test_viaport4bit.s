@@ -132,7 +132,7 @@ via_init:
                                 ; except pin 7 - use that for detecting ready state
         sta     VIA0_DDRB
         lda     #2
-        jsr     LCDosSleep10ms
+        jsr     k_LCD_sleep_10_ms
         ; function set - 4bit mode (single write first)
         lda     #%0011          ; Function set
         jsr     lcd_instruction_nybble
@@ -154,13 +154,13 @@ lcd_clear:
         lda     #$00000001      ; Clear display
         jsr     lcd_instruction
         lda     #2
-        jmp     LCDosSleep10ms
+        jmp     k_LCD_sleep_10_ms
 
 lcd_home:
         lda     #$00000010      ; home and reset shift
         jsr     lcd_instruction
         lda     #2
-        jmp     LCDosSleep10ms
+        jmp     k_LCD_sleep_10_ms
 
 lcd_goto:
         ora     #$80            ; flag for set datadistplay index set or'd with desired index
@@ -295,7 +295,7 @@ lcdmsg:
 
 
 ; note this is code from a system call - should become one in next rev!
-LCDosSleep10ms:
+k_LCD_sleep_10_ms:
         phy
         phx
 .outerloop:

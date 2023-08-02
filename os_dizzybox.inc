@@ -71,7 +71,7 @@ dizzybox_cd:
 
         lda     filename,y
         sta     current_path,x
-        ;         jsr ACIA_putc
+        ;         jsr k_ACIA_putc
         inx
         iny
         cpy     #11
@@ -131,23 +131,23 @@ dizzybox_ls:
         ldx     #'d'
 .notefile
         txa                     ; swap in d or space
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         k_macro_print_c SPACE
         ldy     #0
 .printname:
         lda     (zp_sd_address),y
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         iny
         cpy     #8
         bne     .printname
         k_macro_print_c '.'
 .printext:
         lda     (zp_sd_address),y
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         iny
         cpy     #11
         bne     .printext
-        jsr     ACIA_putc_CRLF
+        jsr     k_ACIA_putc_crlf
         bra     .printloop
 .quit:
         ply
@@ -217,20 +217,20 @@ dizzybox_cat:
         ply
         bcs     .return         ; found end of file marker
         pha
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         pla
         cmp     #NL
         bne     .move_on
         lda     #CR             ; add extra CR if we fine a NL in case of unix endings
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
 .move_on
         iny
         cpy     #80             ; todo paging here?
         bne     .loop
-        jsr     ACIA_putc_CRLF
+        jsr     k_ACIA_putc_crlf
         ldy     #0
         ; check keypress
-        jsr     ACIA_getc
+        jsr     k_ACIA_getc
         bcc     .loop
         ; get out keys?
         cmp     #ESC
@@ -265,11 +265,11 @@ dizzybox_pwd:
         bcs     .done
 
         jsr     _format_8_dot_3
-        jsr     ACIA_putZ_osCallArg0;macro_oscall oscPutZArg0
+        jsr     k_ACIA_putz_osCallArg0;macro_oscall oscPutZArg0
         k_macro_print_c '/'
         bra     .loop
 .done:
-        jsr     ACIA_putc_CRLF
+        jsr     k_ACIA_putc_crlf
         rts
 
 ; make a path iterator with path in osCallArg2 and output filename at osCallArg1
@@ -350,7 +350,7 @@ _parse_and_format_8_3:
 .count_loop:
         lda     (osCallArg0),y
         beq     .check_count
-        ;         jsr ACIA_putc
+        ;         jsr k_ACIA_putc
         lda     (osCallArg0),y
         ; check is a legal char
         jsr     _case_insensitise
@@ -512,7 +512,7 @@ _open_current_path:
 .copy_path:
         lda     current_path,x
         sta     filename,y
-        ;jsr ACIA_putc
+        ;jsr k_ACIA_putc
         iny
         inx
         cpy     #11             ; at end of 8+3+1 ? (so we skip trailing /)
@@ -541,5 +541,5 @@ _open_current_path:
 .quit:
         ply
         plx
-        ;jsr ACIA_putc_CRLF
+        ;jsr k_ACIA_putc_crlf
         rts

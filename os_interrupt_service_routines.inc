@@ -19,7 +19,7 @@ VIA0IER=VIA0+14
 ; also want to reset time & date numbers if they don't make sense
 ; Set T1 to time out every 10ms @ CLOCK for 5Mz this is  $C34E is 49,998 decimal.
 ; T1 period = n+2 / φ2 freq
-RTC_SETUP:
+k_rtc_setup:
 ;time out for our clock
         ldx     #<os_rtc_cs_32  ; this code assumes the rtc addresses are in a contigous group!
 .clearloop:
@@ -30,7 +30,7 @@ RTC_SETUP:
         ;         sei (already set when called)
         ; re-ordered code to tell VIA to enable interrupts first
         ; Set T1 to free-run and produce an interrupt every time-out.
-        jsr     RTC_ON
+        jsr     k_rtc_on
         lda     #%01000000      ; T1 continuous interrupts
         sta     VIA0ACR         ; Enable VIA1 to generate an interrupt every time T1 times out.
         ;         cli
@@ -40,12 +40,12 @@ RTC_SETUP:
         sta     VIA0T1CH        ; writing here starts timer
         rts
 
-RTC_ON:
+k_rtc_on:
         lda     #%11000000      ; Enable  T1 time-out interrupt.
         sta     VIA0IER
         rts
 
-RTC_OFF:
+k_rtc_off:
         lda     #%01000000      ; Disable T1 time-out interrupt.
         sta     VIA0IER
         rts

@@ -15,31 +15,31 @@ MONITOR:
         macro_putz msg_monitor_welcome
 
         ; monitor prompt (warm start entry point)
-m_prompt:
-        jsr     ACIA_putc_CRLF
+k_monitor_prompt:
+        jsr     k_ACIA_putc_crlf
         jsr     m_printPrompt   ;
 
 
 m_monitorloop:
-        jsr     CLEAR_OS_INPUT_BUF
+        jsr     k_clear_os_input_buf
         lda     #40
         sta     osCallArg0      ; set maximum linelength
-        jsr     osLineEditInputBuf
-        jmp     m_parse_input   ; all ending commands and syntax errors return to m_prompt
+        jsr     k_line_editor
+        jmp     m_parse_input   ; all ending commands and syntax errors return to k_monitor_prompt
 
 
 m_cmd_runat:
-        jsr     ACIA_putc_CRLF
+        jsr     k_ACIA_putc_crlf
         lda     #<msg_running_at
         sta     R0
         lda     #>msg_running_at
         sta     R0+1
-        jsr     ACIA_putc_z
+        jsr     k_ACIA_putc_z
         lda     m_working+1
-        jsr     ACIA_putc_hex_byte
+        jsr     k_ACIA_putc_Hex_Byte
         lda     m_working
-        jsr     ACIA_putc_hex_byte
-        jsr     ACIA_putc_CRLF
+        jsr     k_ACIA_putc_Hex_Byte
+        jsr     k_ACIA_putc_crlf
         jmp     (m_working)
 
 m_cmd_snake:
@@ -47,43 +47,43 @@ m_cmd_snake:
 
 m_cmd_vttest:
         macro_putz osvt_test    ; send a fake escape code to run test pattern
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 m_cmd_vtsetting:
         macro_putz osvt_settings;send a fake escape code to get my serial term into settings mode
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 m_cmd_list8bytes:
-        jsr     ACIA_putc_CRLF
+        jsr     k_ACIA_putc_crlf
         ldy     #0
 .loop:
         lda     (m_working),y
-        jsr     ACIA_putc_hex_byte
+        jsr     k_ACIA_putc_Hex_Byte
         lda     #SPACE
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         iny
         cpy     #8
         bne     .loop
-        jsr     ACIA_putc_CRLF
-        jmp     m_prompt
+        jsr     k_ACIA_putc_crlf
+        jmp     k_monitor_prompt
 
 m_cmd_xmodem:
-        jsr     ACIA_putc_CRLF
+        jsr     k_ACIA_putc_crlf
         jsr     osXModemDownload
         bcc     .go             ; no error so run
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 .go:
         jmp     (FileLoadedPtr) ; start program just loaded (or crash if nonsense pointers!)
 
 m_printPrompt:
         lda     #"$"
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         lda     m_working+1
-        jsr     ACIA_putc_hex_byte
+        jsr     k_ACIA_putc_Hex_Byte
         lda     m_working
-        jsr     ACIA_putc_hex_byte
+        jsr     k_ACIA_putc_Hex_Byte
         lda     #">"
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         rts
 
 
@@ -269,7 +269,7 @@ m_cmd_help:
         bra     .load_table     ; do again with printing
 
 .quit:
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 .countOrPrint:
         ldy     #4              ; lo byte of
@@ -294,7 +294,7 @@ m_cmd_help:
         bit     .onlyCount      ; do we print?
         bpl     .next           ; no
 .print:
-        jsr     ACIA_putc       ; yes
+        jsr     k_ACIA_putc     ; yes
 .next:
         iny
         bra     .countOrPrintLoop; back into loop
@@ -306,21 +306,21 @@ m_cmd_help:
         lda     #SPACE
         ; pretty print tab
 .tabs:
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         iny
         cpy     .maxWidth       ; print to max number of spaces
         bcc     .tabs
         lda     #'-'            ; print '- '
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         lda     #SPACE
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         ply                     ; pull it back
         ; print remainder of help message
 .printRest:
         iny                     ; (to skip the '-' )
         lda     (.printVec),y
         beq     .next_entry
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         bra     .printRest
 
 .next_entry:
@@ -352,7 +352,7 @@ m_parse_input:
         ; if we have reached here then we have not made a match so quit with error
 .syntaxerror:
         macro_putz msg_monitor_syntaxerror
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 
 .m_parse_input_main:
@@ -390,7 +390,7 @@ m_parse_input:
 
 .checkhex:
         lda     osInputBuffer,x
-        jsr     osIsHexByte     ; is it hex?
+        jsr     k_is_hex_byte   ; is it hex?
         bcc     .match          ; yes
         ; no match in this case
         bcs     .skip_to_next_cmd
@@ -441,9 +441,9 @@ m_parse_input:
 ; sends test chars to vt
 m_cmd_vtescape:
         lda     #ESC
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         lda     #'['
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         ldx     #3
 .loop:
         lda     osInputBuffer,x
@@ -451,10 +451,10 @@ m_cmd_vtescape:
         inx
         cmp     #SPACE
         beq     .loop           ; parse out spaces
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         bra     .loop
 .done:
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 
 m_cmd_echo:
@@ -465,10 +465,10 @@ m_cmd_echo:
         inx
         cmp     #SPACE
         beq     .loop           ; parse out spaces
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         bra     .loop
 .done:
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 
 ; monitor command
@@ -478,7 +478,7 @@ m_cmd_gotohex:
 m_cmd_gotohex2:
         lda     osInputBuffer,x
         sta     osOutputBuffer,x
-        jsr     osIsHexByte
+        jsr     k_is_hex_byte
         asl
         asl
         asl
@@ -487,14 +487,14 @@ m_cmd_gotohex2:
         inx
         lda     osInputBuffer,x
         sta     osOutputBuffer,x
-        jsr     osIsHexByte
+        jsr     k_is_hex_byte
         ora     m_working+1     ; hi byte lower nybble
         sta     m_working+1
         ; now do the lower byte
         inx
         lda     osInputBuffer,x
         sta     osOutputBuffer,x
-        jsr     osIsHexByte
+        jsr     k_is_hex_byte
         asl
         asl
         asl
@@ -503,10 +503,10 @@ m_cmd_gotohex2:
         inx
         lda     osInputBuffer,x
         sta     osOutputBuffer,x
-        jsr     osIsHexByte
+        jsr     k_is_hex_byte
         ora     m_working
         sta     m_working
-        jmp     m_prompt        ; back to monitor
+        jmp     k_monitor_prompt; back to monitor
 
 m_cmd_puthex:
         ; match pattern of two hex digits and space. end at buffer end or 8 hex bytes.
@@ -517,7 +517,7 @@ m_cmd_puthex:
 .getnexthexbyte:
         lda     osInputBuffer,x
         beq     .endofinput
-        jsr     osIsHexByte
+        jsr     k_is_hex_byte
         sta     osOutputBuffer+16,y; ; debug
         bcs     .syntaxerror
         asl
@@ -527,7 +527,7 @@ m_cmd_puthex:
         sta     osOutputBuffer,y
         inx
         lda     osInputBuffer,x
-        jsr     osIsHexByte
+        jsr     k_is_hex_byte
         sta     osOutputBuffer+16,y; debug
         bcs     .syntaxerror
         ora     osOutputBuffer,y
@@ -561,11 +561,11 @@ m_cmd_puthex:
 .syntaxerror:
         macro_putz msg_monitor_syntaxerror
 .done:
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 ; add a user command to the user command table
 ; copy from osCallArg0
-m_add_user_cmd:
+k_monitor_add_user_cmd:
 .cmpVec=osR0
 .cmpVec2=osR1
 .atEnd=osR2                     ; 0 = yes, 1 = no
@@ -646,27 +646,27 @@ m_add_user_cmd:
         sta     R0
         lda     #>msg_monitor_cmdtable_added
         sta     R0+1
-        jsr     ACIA_putc_z
+        jsr     k_ACIA_putc_z
 
         ldy     #0
 .print_loop:
         lda     (.cmpVec2),y
         cmp     #'-'
         beq     .pl_done
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         iny
         bne     .print_loop
 
 
 .pl_done:
-        jsr     ACIA_putc_CRLF
+        jsr     k_ACIA_putc_crlf
         rts
 
 
 m_cmd_clearusercommands:
         stz     osUserCmdTable+1
         macro_putz msg_monitor_clearedusercommands
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 m_cmd_date:
         ldy     #0
@@ -686,13 +686,13 @@ m_cmd_date:
 .just_print:
         jsr     k_print_date_time
 .quit
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 .parse_set:
         .byte   " set"          ;reverse order
 
 m_cmd_load_exe:
         macro_putz msg_not_implimented
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 msg_monitor_clearedusercommands:
         .string "User commands cleared",CR,LF
@@ -730,13 +730,13 @@ m_print_error_message:
 .print_loop:
         lda     msg_error_enum_list,x
         beq     .done_print_loop
-        jsr     ACIA_putc
+        jsr     k_ACIA_putc
         inx                     ;inc index
         bne     .print_loop
 .done_print_loop:
         bit     R0
         bmi     .done
-        jsr     ACIA_putc_CRLF
+        jsr     k_ACIA_putc_crlf
 .done
         ply
         plx
@@ -767,7 +767,7 @@ _syntax_error:
 _die_with_os_file_error:
         lda     os_file_error
         jsr     m_print_error_message
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 m_cmd_sd_init:
         ldy     #4
@@ -806,7 +806,7 @@ m_cmd_sd_init:
         jsr     dizzybox_init
 .end:
         macro_putz msg_monitor_ok
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 ; isolate arg
 ; send to dizzybox_cd
@@ -819,7 +819,7 @@ m_cmd_sd_cd:
 
         jmp     _die_with_os_file_error
 .end:
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 
 
@@ -912,7 +912,7 @@ m_cmd_sd_ls:
         beq     .end
         jmp     _die_with_os_file_error
 .end:
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 
 ; isolate arg
@@ -943,17 +943,17 @@ m_cmd_sd_cat:
         bcc     .end
         jmp     _die_with_os_file_error
 .end:
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 ; syntax_error:
 ;         lda #E_SYNTAX_ERROR
 ;         jsr m_print_error_message
-;         jmp m_prompt
+;         jmp k_monitor_prompt
 
 ; just do it!
 m_cmd_sd_pwd:
         jsr     dizzybox_pwd
-        jmp     m_prompt
+        jmp     k_monitor_prompt
 
 
 

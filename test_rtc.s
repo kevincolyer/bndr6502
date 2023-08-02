@@ -46,37 +46,37 @@ rtc_date_func_rts:
         macro_oscall oscPutZArg0
 
         lda     os_rtc_HOURS
-        jsr     bin2bcd
+        jsr     k_bin_to_bcd
         macro_oscall oscPutHexByte
         lda     #':'
         macro_oscall oscPutC
 
         lda     os_rtc_MINUTES
-        jsr     bin2bcd
+        jsr     k_bin_to_bcd
         macro_oscall oscPutHexByte
         lda     #':'
         macro_oscall oscPutC
 
         lda     os_rtc_SECONDS
-        jsr     bin2bcd
+        jsr     k_bin_to_bcd
         macro_oscall oscPutHexByte
         lda     #SPACE
         macro_oscall oscPutC
 
         lda     os_rtc_DAY
-        jsr     bin2bcd
+        jsr     k_bin_to_bcd
         macro_oscall oscPutHexByte
         lda     #':'
         macro_oscall oscPutC
 
         lda     os_rtc_MONTH
-        jsr     bin2bcd
+        jsr     k_bin_to_bcd
         macro_oscall oscPutHexByte
         lda     #':'
         macro_oscall oscPutC
 
         lda     os_rtc_YEAR
-        jsr     bin2bcd
+        jsr     k_bin_to_bcd
         macro_oscall oscPutHexByte
 
         macro_oscall oscPutCrLf
@@ -84,13 +84,13 @@ rtc_date_func_rts:
 
 rtc_date_msg:
         .byte   "hh:mm:ss dd:mm:yy",CR,LF,0
-bin2bcd:
+k_bin_to_bcd:
         phy
         clc
         ldy     #8              ; 8 times through
         sta     osR0            ; bin to convert
         stz     osR0+1          ; bcd output init
-.bin2bcdloop:
+.k_bin_to_bcdloop:
         asl     osR0            ; shift msb to carry
         sed
         lda     osR0+1          ; bcd
@@ -98,7 +98,7 @@ bin2bcd:
         sta     osR0+1
         cld
         dey
-        bne     .bin2bcdloop
+        bne     .k_bin_to_bcdloop
         ply                     ; done
         rts
         ;==============================================
@@ -231,7 +231,7 @@ VIA0IER=VIA0+14
 ; also want to reset time & date numbers if they don't make sense
 ; Set T1 to time out every 10ms @ CLOCK for 5Mz this is  $C34E is 49,998 decimal.
 ; T1 period = n+2 / φ2 freq
-RTC_SETUP:
+k_rtc_setup:
 ;time out for our clock
         ldx     #<os_rtc_cs_32  ; this code assumes the rtc zp addresses are in a contigous group!
 .clearloop:
@@ -249,12 +249,12 @@ RTC_SETUP:
         lda     #%01000000      ; T1 continous interrups
         sta     VIA0ACR         ; Enable VIA1 to generate an interrupt every time T1 times out.
 
-RTC_ON:
+k_rtc_on:
         lda     #%11000000      ; Enable  T1 time-out interrupt.
         sta     VIA0IER
         rts
 
-RTC_OFF:
+k_rtc_off:
         lda     #%01000000      ; Disable T1 time-out interrupt.
         sta     VIA0IER
         rts
