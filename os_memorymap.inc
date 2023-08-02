@@ -119,6 +119,8 @@ os_rtc_cs_32:
         wrd
 os_rtc_countdown:               ; two byte countdown timer
         wrd
+os_yield_countdown:
+        wrd                     ; two bytes (first used, second reserved)
 
 os_rtc_CENTISEC:
         byt                     ;for the time-of-day (TOD) variables.

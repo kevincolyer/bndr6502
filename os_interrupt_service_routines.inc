@@ -89,15 +89,21 @@ irq_builtin:                    ; ... this! (unless redirected)
                                 ; timer is automatically reloaded...
         ; countdown timer
         lda     os_rtc_countdown; is countdown >0
-        beq     .clock          ; 0 = no longer running
+        beq     .yeild_ctd      ; 0 = no longer running
 
         ; countdown running and >1
         dec     os_rtc_countdown; decrement
-        bne     .clock          ; is zero?
+        bne     .yeild_ctd      ; is zero?
         lda     os_rtc_countdown+1; yes, is high byte zero?
-        beq     .clock          ; yes, so done
+        beq     .yeild_ctd      ; yes, so done
         dec     os_rtc_countdown+1; no, so decrement..
         dec     os_rtc_countdown; and set lo byte to continue countdown
+.yeild_ctd:
+        lda     os_yield_countdown; is countdown >0
+        beq     .clock          ; 0 = no longer running
+        ; os_yield_countdown running and >1
+        dec     os_yield_countdown; decrement
+        bne     .clock          ; is zero?
 
 .clock:
         ; uptime and clock

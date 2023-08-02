@@ -325,18 +325,19 @@ k_line_editor:
         jsr     k_clear_os_input_buf
 ; get a char
 .getachar:
+        jsr     k_yield         ; good time to yield
         jsr     k_ACIA_getc
         bcc     .getachar
-; if backspace try rubout
+        ; if backspace try rubout
         cmp     #DEL
         beq     .tryRubOut
         cmp     #BS
         beq     .tryRubOut
         cmp     #CR
         beq     .return
-;         cmp     #LF     ;debug
-;         beq     .gotalf     ;debug
-; otherwise add to buffer and echo
+        ;         cmp     #LF     ;debug
+        ;         beq     .gotalf     ;debug
+        ; otherwise add to buffer and echo
         jsr     k_ACIA_putc
         ldx     osInputBufferLen
         sta     osInputBuffer,x
