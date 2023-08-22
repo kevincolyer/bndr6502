@@ -27,13 +27,22 @@ userEnd         = osStart-1
 osEnd           = ioSpace-1
 
 
-
+        .global userZp,osZp,osInputBuffer,osOutputBuffer,osUserCmdTable,fat32_workspace,current_path,temp_path,userLowMem,userStart,userEnd,romStart
 
 ;--------------------------------------------
 ; assign zero page area for os
 ;--------------------------------------------
         .dsect
         .org    osZp
+
+osCallArg0:
+        wrd
+osCallArg1:
+        wrd
+osCallArg2:
+        wrd
+osCallArg3:
+        wrd
 
 osError:
         byt
@@ -56,14 +65,6 @@ osR3:
 osR4:
         wrd
 
-osCallArg0:
-        wrd
-osCallArg1:
-        wrd
-osCallArg2:
-        wrd
-osCallArg3:
-        wrd
 
         ; extra registers for use in kernal
 R0:
@@ -93,6 +94,7 @@ osLastZp:                       ;used as a marker for where the last allocated o
         ;osRTC
         .dend
 
+        .global osCallArg0,osCallArg1,osCallArg2,osCallArg3
 
 ; -----------------------
 ; general variables that do not need to be in zp
@@ -108,10 +110,13 @@ osRandomSeed:
 osRandomWord:
         wrd
 
+        .global osOutputBufferLen,osInputBufferLen
+
 ; Reserve 4 bytes of RAM variable space for a 32-bit centisecond counter.
 ; This record rolls over about every 471 days.  It is to ease calculation
 ; of times and alarms that could cross irrelevant calendar boundaries.
 ; Byte order is low byte first, high byte last.
+
 
 
 os_rtc_cs_32:
@@ -143,6 +148,7 @@ os_rtc_set:
 os_rtc_DOW:                     ; in the init code this marks last entry to zero
         byt
 
+        .global os_rtc_CENTISEC,os_rtc_SECONDS,os_rtc_MINUTES,os_rtc_HOURS,os_rtc_DAY,os_rtc_MONTH,os_rtc_YEAR,os_rtc_CENTURY,os_rtc_DOW
 ; i2c reseve 6 bytes
 i2c_v_started:
         byt                     ; osvariable space
@@ -198,6 +204,7 @@ temp_path_len:                  ; dizzybox
         byt
         .dend
 
+        .global filename,os_file_error,current_path_len,temp_path_len
 ;--------------------------------------------
 ; IO device access
 ;--------------------------------------------

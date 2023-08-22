@@ -631,7 +631,7 @@ k_monitor_add_user_cmd:
         lda     .atEnd
         bne     .quit
         ; at end so store a zero to indicate end of table in next but one entry
-        stz     osUserCmdTable,x
+        stz     osUserCmdTable+1,x
 
 .quit:
         ; print commands

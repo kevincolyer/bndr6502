@@ -52,7 +52,8 @@ k_fat32_iterate_dir:
         rts
 
 ; Find file by name
-; x and y have filenamek_fat32_load_file
+; x and y have filename
+; k_fat32_load_file
 ; assumes a root or dir is opened
 
 

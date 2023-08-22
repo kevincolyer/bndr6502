@@ -40,6 +40,11 @@ Get_Chr:
         and     #$08            ; mask rcvr full bit
         beq     .Get_Chr2       ; if not chr, done
         lda     ACIA_Data       ; else get chr
+        ;         cmp #CR                 ; NOTE is a carriage return?
+        ;         bne .cont               ; NOTE
+        ;         clc                     ; NOTE then we got nothing (unix style device independance)
+        ;         rts                     ; NOTE
+        ; .cont:
         sec                     ; and set the Carry Flag
 .Get_Chr2:
         rts                     ; done
@@ -48,6 +53,12 @@ Get_Chr:
         ;
 k_ACIA_putc:
 Put_Chr:
+        cmp     #NL             ; NOTE adds a CR if NL sent (unix style!)
+        bne     PutIt           ; NOTE
+        lda     #CR             ; NOTE
+        jsr     PutIt           ; NOTE
+        lda     #NL             ; NOTE
+PutIt:
         pha                     ; save registers
 .Put_Chr1:
         lda     ACIA_Status     ; serial port status

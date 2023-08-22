@@ -26,6 +26,7 @@ osvt_return_is_cr:
 osct_return_is_cr_lf:
         .byte   ESC,"[20h",0
 
+        .global osvt_fgbg_reset,osvt_savecursor,osvt_restorecursor,osvt_cursoron,osvt_cursoroff,osvt_home,osvt_cls
 ;         .byte   ESC,"[0m",ESC,"[H",ESC,"[2J" ; reset fg and bg, home and clear screen
 ; see https://fossies.org/linux/splitvt/escapes/vt102.codes
 

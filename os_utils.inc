@@ -322,6 +322,7 @@ k_string_cmp_to_os_output_buf:
 ; Inputbuffer is 256 bytes but Arg0 set's max length (e.g. screen width)
 
 k_line_editor:
+        phx
         jsr     k_clear_os_input_buf
 ; get a char
 .getachar:
@@ -376,6 +377,7 @@ k_line_editor:
         beq     .end
         macro_putz .msg_buffer_overflow
 .end:
+        plx
         rts
 
 .msg_buffer_overflow:

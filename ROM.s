@@ -249,7 +249,7 @@ os_yield:
         jmp     k_yield
 
 
-
+        .global os_yield,os_ACIA_getc,os_ACIA_putc,os_ACIA_putc_crlf,os_ACIA_putc_Hex_Byte,os_ACIA_putz,os_ACIA_putz_osCallArg0,os_line_editor
 
 
 ;
@@ -287,7 +287,7 @@ msg_version:
         ifdef   nolcd
         .byte   "(-Dnolcd) "
         endif
-        .byte   "v1.0.1",CR,LF,0
+        .byte   "v1.0.2",CR,LF,0
 
 ;===============================================
 ;       COLD BOOT / RESET ENTRY POINT

@@ -1,5 +1,6 @@
 
 
+
 dizzybox_init:
         lda     #'/'
         sta     current_path
@@ -179,6 +180,79 @@ dizzybox_load:
         plx
         rts
 
+; TODO a 32bit seek
+dizzybox_seek:
+        rts
+
+dizzybox_file_open:
+; filename initially put in osCallArg0
+; path should be set before!
+        phx
+        phy
+        stz     os_file_error
+
+        jsr     _open_current_path
+        bcs     .return
+
+        jsr     _parse_and_format_8_3
+        bcs     .return
+
+        ldx     #<filename
+        ldy     #>filename
+        jsr     k_fat32_find_open_dir_ent
+        bcs     .return
+
+        ; if all gone well file is open for reading!
+.return
+        ply
+        plx
+        rts
+        ; reads a byte
+        ; prerequisite that file is open
+        ; c -> clear read ok
+        ; c -> set  = EOF (file error is not checked or set)
+        ; preserves x and y
+dizzybox_read_byte:
+        phy
+        phx
+        jsr     fat32_file_readbyte
+        plx
+        ply
+        rts
+
+; reads a line to os_inputbuffer
+; on entry if a!=CR CR's will be stripped
+; prerequisite that file is open
+; c -> clear read ok
+; c -> set  = EOF (file error is not checked or set)
+; preserves x and y
+dizzybox_read_line:
+        phy
+        phx
+        sta     osInputBufferLen; stash A here for now
+        jsr     k_clear_os_input_buf
+        ldx     #0
+.readloop:
+        jsr     fat32_file_readbyte
+        bcs     .return         ; EOF or error
+        cmp     #CR
+        beq     .store
+        eor     osInputBufferLen; if a != CR
+        bne     .readloop       ; skip the CR
+.store:
+        sta     osInputBuffer,x
+        inx
+        cpx     $ff             ; read more than 255 chars? Overflow
+        bne     .readloop       ; no, keep reading
+        ; handle overflow
+        dex
+.return:
+        stx     osInputBufferLen
+        stz     osInputBuffer,x
+        plx
+        ply
+        rts
+
 ; assumes current path is open and filename is opened
 ; handles paging with A='m' (quits on esc or ctrl-c)
 ; handles files > 256 bytes
@@ -250,6 +324,7 @@ dizzybox_cat:
         plx
         ply
         rts
+
         ; preserves x, y
         ; does not change underlying fat32 state
 dizzybox_pwd:
@@ -543,3 +618,5 @@ _open_current_path:
         plx
         ;jsr k_ACIA_putc_crlf
         rts
+
+        .global dizzybox_cd, dizzybox_ls, dizzybox_pwd, dizzybox_load, dizzybox_cat, dizzybox_file_open, dizzybox_read_byte, dizzybox_read_line, dizzybox_seek
