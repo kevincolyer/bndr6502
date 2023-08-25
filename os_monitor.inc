@@ -706,6 +706,9 @@ msg_monitor_cmdtable_added:
 msg_monitor_ok:
         .string "OK",CR,LF
 
+; falls through below - uses os_file_error. Or high bit to skip printing crlf
+k_print_file_error:
+        lda     os_file_error
 ; prints message passed in A
 ; preserves x,y
 ; will print CR,LF at end unless A hi bit set
@@ -715,6 +718,7 @@ m_print_error_message:
         sta     R0
         and     #$7f
         tay
+        beq     .print_loop     ; else it never finds the first!
         ldx     #0
 .find_message:
         lda     msg_error_enum_list,x

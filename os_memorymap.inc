@@ -78,7 +78,10 @@ m_working:
 os_in_testing_mode:             ; set to $ff to indicate testing
         byt
 
-
+yieldVec0:                      ; set hi to something other than 0 to allow it to be called!
+        wrd
+yieldVec1:                      ; set hi to something other than 0 to allow it to be called!
+        wrd
 
 zp_sd_address:
         wrd
@@ -163,8 +166,8 @@ i2c_v_bit:
 i2c_v_lcd_instruction:
         byt                     ; tempstorage for lcd instruction
 
-zp_fat32_variables:             ; 24 bytes
-        blk     24
+zp_fat32_variables:             ; 32 bytes
+        blk     32
 
 rtc_hex_temp:
         byt

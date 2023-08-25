@@ -116,6 +116,7 @@ dizzybox_cd:
 
 dizzybox_ls:
 ; preserves x, y
+; quits with carry set and NO error for end of file list
         phx
         phy
         stz     os_file_error
@@ -154,8 +155,8 @@ dizzybox_ls:
         ply
         plx
         rts
-
-; preserves x, y
+        ; filename passed in osCallArg0
+        ; preserves x, y
 dizzybox_load:
         phx
         phy
@@ -182,6 +183,8 @@ dizzybox_load:
 
 ; TODO a 32bit seek
 dizzybox_seek:
+        stz     os_file_error
+        clc
         rts
 
 dizzybox_file_open:
@@ -235,11 +238,13 @@ dizzybox_read_line:
 .readloop:
         jsr     fat32_file_readbyte
         bcs     .return         ; EOF or error
-        cmp     #CR
-        beq     .store
-        eor     osInputBufferLen; if a != CR
+        cmp     #CR             ; is it a CR?
+        bne     .store          ; no, so store it
+        cmp     osInputBufferLen; if a != CR
         bne     .readloop       ; skip the CR
 .store:
+        cmp     #NL
+        beq     .return         ; found newline so CHOMP and zero terminate
         sta     osInputBuffer,x
         inx
         cpx     $ff             ; read more than 255 chars? Overflow
@@ -265,6 +270,7 @@ dizzybox_read_line:
 ; find and open - check not a DIR
 ; print to terminal
 ; add option -m for more! (more - with pager?)
+; filename passed in osCallArg0
 
 dizzybox_cat:
         ; try to read a page at a time until done
@@ -619,4 +625,4 @@ _open_current_path:
         ;jsr k_ACIA_putc_crlf
         rts
 
-        .global dizzybox_cd, dizzybox_ls, dizzybox_pwd, dizzybox_load, dizzybox_cat, dizzybox_file_open, dizzybox_read_byte, dizzybox_read_line, dizzybox_seek
+

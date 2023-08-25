@@ -6,7 +6,22 @@ k_yield:
         lda     #10
         sta     os_yield_countdown; reset os_yield_countdown
 
+        lda     yieldVec0+1
+        beq     .noyv0
+
+        jsr     (yieldVec0)
+.noyv0:
+        lda     yieldVec1+1
+        beq     .noyv1
+
+        jsr     (yieldVec1)
+.noyv1:
         jsr     k_random        ; shuffle rng a bit
 
 .nothing_to_do
+        rts
+
+init_yield:
+        stz     yieldVec0+1
+        stz     yieldVec1+1
         rts

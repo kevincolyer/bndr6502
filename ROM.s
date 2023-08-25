@@ -248,9 +248,30 @@ os_bin_to_bcd:
 os_yield:
         jmp     k_yield
 
+os_dizzybox_cd:
+        jmp     dizzybox_cd
+os_dizzybox_ls:
+        jmp     dizzybox_ls
+os_dizzybox_pwd:
+        jmp     dizzybox_pwd
+os_dizzybox_load:
+        jmp     dizzybox_load
+os_dizzybox_cat:
+        jmp     dizzybox_cat
+os_dizzybox_file_open:
+        jmp     dizzybox_file_open
+os_dizzybox_read_byte:
+        jmp     dizzybox_read_byte
+os_dizzybox_read_line:
+        jmp     dizzybox_read_line
+os_dizzybox_seek:
+        jmp     dizzybox_seek
+os_print_file_error:
+        jmp     k_print_file_error
+
 
         .global os_yield,os_ACIA_getc,os_ACIA_putc,os_ACIA_putc_crlf,os_ACIA_putc_Hex_Byte,os_ACIA_putz,os_ACIA_putz_osCallArg0,os_line_editor
-
+        .global os_dizzybox_cd, os_dizzybox_ls, os_dizzybox_pwd, os_dizzybox_load, os_dizzybox_cat, os_dizzybox_file_open, os_dizzybox_read_byte, os_dizzybox_read_line, os_dizzybox_seek
 
 ;
 ; os_fat32_open_dir:
@@ -287,7 +308,7 @@ msg_version:
         ifdef   nolcd
         .byte   "(-Dnolcd) "
         endif
-        .byte   "v1.0.2",CR,LF,0
+        .byte   "v1.0.3",CR,LF,0
 
 ;===============================================
 ;       COLD BOOT / RESET ENTRY POINT
@@ -321,6 +342,9 @@ osBootStrap:
 
         jsr     k_rtc_setup     ; set clock up and start ticking!
         cli                     ; enable interrupts
+
+        ; scheduling
+        jsr     init_yield
 
         ; current end of Bootstrapping!
 

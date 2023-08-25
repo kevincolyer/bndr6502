@@ -17,8 +17,9 @@ fat32_pendingsectors=zp_fat32_variables+$0d; 1 byte
 fat32_address=zp_fat32_variables+$0e; 2 bytes
 fat32_nextcluster=zp_fat32_variables+$10; 4 bytes
 fat32_bytesremaining=zp_fat32_variables+$14; 4 bytes
-
-; zp_fat32_general_pointer is a genral pointer i reserved - poss could be switched for R0 if need space
+fat32_filesize=zp_fat32_variables+$18; 4 bytes
+fat32_firstcluster=zp_fat32_variables+$18+4; 4 bytes
+        ; zp_fat32_general_pointer is a genral pointer i reserved - poss could be switched for R0 if need space
 fat32_errorstage=zp_fat32_general_pointer; only used during initializatio
 fat32_filenamepointer=zp_fat32_general_pointer; only used when searching for a file
 
@@ -444,29 +445,37 @@ fat32_opendirent:
         ldy     #28
         lda     (zp_sd_address),y
         sta     fat32_bytesremaining
+        sta     fat32_filesize
         iny
         lda     (zp_sd_address),y
         sta     fat32_bytesremaining+1
+        sta     fat32_filesize
         iny
         lda     (zp_sd_address),y
         sta     fat32_bytesremaining+2
+        sta     fat32_filesize
         iny
         lda     (zp_sd_address),y
         sta     fat32_bytesremaining+3
+        sta     fat32_filesize
 
         ; Seek to first cluster
         ldy     #26
         lda     (zp_sd_address),y
         sta     fat32_nextcluster
+        sta     fat32_firstcluster
         iny
         lda     (zp_sd_address),y
         sta     fat32_nextcluster+1
+        sta     fat32_firstcluster+1
         ldy     #20
         lda     (zp_sd_address),y
         sta     fat32_nextcluster+2
+        sta     fat32_firstcluster+2
         iny
         lda     (zp_sd_address),y
         sta     fat32_nextcluster+3
+        sta     fat32_firstcluster+3
 
         jsr     fat32_seekcluster
         clc
@@ -569,15 +578,22 @@ fat32_file_readbyte:
         ;
         ; The byte is returned in A with C clear; or if end-of-file was reached, C is set instead
 
-        sec
-
+;        clc
+        stz     os_file_error
         ; Is there any data to read at all?
         lda     fat32_bytesremaining
         ora     fat32_bytesremaining+1
         ora     fat32_bytesremaining+2
         ora     fat32_bytesremaining+3
-        beq     .rts
+        bne     .cont
+        lda     #E_EOF
+        sta     os_file_error
+        lda     #0
+        sec
+        rts
 
+.cont:
+        sec
         ; Decrement the remaining byte count
         lda     fat32_bytesremaining
         sbc     #1
@@ -617,6 +633,7 @@ fat32_file_readbyte:
         inc     zp_sd_address+2
         bne     .rts
         inc     zp_sd_address+3
+        clc
 
 .rts
         rts
@@ -665,3 +682,172 @@ fat32_file_read:
         clc
         rts
 
+
+
+;;--code modified from X16 fat32.s----------------------------------------------------------------------
+; In:  fat32_size: offset (osCallArg0)
+; c =1 failure - error in os_file_errror
+fat32_seek:                     ; TODO - give up!
+        ;
+        ; .desired_offset=osCallArg0  ; note word so includes osCallArg1
+        ; .temp_offset_sector=osR0
+        ; .temp_sector=osR1
+        ;
+        ;         stz     os_file_error
+        ;
+        ;         ; Empty file: seek is a no-op
+        ;         lda     fat32_filesize+0
+        ;         ora     fat32_filesize+1
+        ;         ora     fat32_filesize+2
+        ;         ora     fat32_filesize+3
+        ;         bne     .skip
+        ;         sec
+        ;         rts
+        ; .skip:
+        ;
+        ;         ; Set file_offset = MIN(desired_offset, file_size)
+        ;         lda     fat32_filesize+0
+        ;         sec
+        ;         sbc     .desired_offset+0
+        ;         lda     fat32_filesize+1
+        ;         sbc     .desired_offset+1
+        ;         lda     fat32_filesize+2
+        ;         sbc     .desired_offset+2
+        ;         lda     fat32_filesize+3
+        ;         sbc     .desired_offset+3
+        ;         bcs     .a0
+        ;         macro_set32 .desired_offset,fat32_filesize
+        ; .a0:
+        ;         macro_set32 fat32_filesize,.desired_offset
+        ;
+        ;         ; If file_offset == file_size, set EOF flag
+        ;         ldx     #0              ; no EOF
+        ;         macro_cmp32_ne .desired_offset,fat32_filesize,.c0
+        ;         ldx     #E_EOF            ; EOF
+        ; .c0:
+        ;         stx     os_file_error
+        ;
+        ; ;         ; Special case: bufptr == 0 && eof?
+        ; ;         ; -> Make bufptr point to $0200 of last sector
+        ; ;         ;    instead of $0000 of next (non-existent) sector
+        ; ;         lda     .desired_offset+0
+        ; ;         bne     .a
+        ; ;         lda     .desired_offset+1
+        ; ;         and     #1
+        ; ;         bne     .a
+        ; ;         bit     .eof
+        ; ;         bpl     .a
+        ;
+        ;         ; Make bufptr point to end of sector_buffer
+        ; ;         lda     #<(sector_buffer+$200)
+        ; ;         sta     .temp_offset_sector+0
+        ; ;         lda     #>(sector_buffer+$200)
+        ; ;         sta     .temp_offset_sector+1
+        ; ;         ; Decrement sector
+        ; ;         lda     .desired_offset+1
+        ; ;         sec
+        ; ;         sbc     #2              ; $0200
+        ; ;         sta     .desired_offset+1
+        ; ;         lda     .desired_offset+2
+        ; ;         sbc     #0
+        ; ;         sta     .desired_offset+2
+        ; ;         lda     .desired_offset+3
+        ; ;         sbc     #0
+        ; ;         sta     .desired_offset+3
+        ; ;         bra     .b
+        ;
+        ; .a:     ; Extract offset within sector ; NOTE done differently at end
+        ; ;         lda     .desired_offset+0
+        ; ;         clc
+        ; ;         adc     #<sector_buffer
+        ; ;         sta     .temp_offset_sector+0; temp location
+        ; ;         lda     .desired_offset+1
+        ; ;         and     #1
+        ; ;         adc     #>sector_buffer
+        ; ;         sta     .temp_offset_sector+1
+        ;
+        ; .b:     ; Extract sector number
+        ;         lda     .desired_offset+1
+        ;         sta     .desired_offset+0
+        ;         lda     .desired_offset+2
+        ;         sta     .desired_offset+1
+        ;         lda     .desired_offset+3
+        ;         sta     .desired_offset+2
+        ;         stz     .desired_offset+3
+        ;         lsr     .desired_offset+2
+        ;         ror     .desired_offset+1
+        ;         ror     .desired_offset+0
+        ;
+        ;         ; Extract sector within cluster
+        ;         lda     fat32_sectorspercluster
+        ;         dec
+        ;         and     .desired_offset+0
+        ;         sta     .temp_sector
+        ;
+        ; ;         ; Calculate cluster index
+        ; ;         ldx     cur_volume+fs::cluster_shift
+        ; ;         beq     .z2
+        ; ; .1:
+        ; ;         lsr     .desired_offset+2
+        ; ;         ror     .desired_offset+1
+        ; ;         ror     .desired_offset+0
+        ; ;         dex
+        ; ;         bne     .1
+        ;
+        ;         ; TODO: It would be a significant optimization to fast forward from
+        ;         ;       the current position, if it is lower than the target position.
+        ;
+        ; ; Go to start cluster
+        ;
+        ; ; NOTE in converting this the libfat32 code can only seek clustors. So this seek will start at the cluster and read consecutive sectors till we find the right one. then read to the byte.
+        ;
+        ;
+        ;                                     ; dst,src
+        ;         macro_set32 fat32_nextcluster,fat32_firstcluster
+        ;
+        ; .z2:    ; Fast forward clusters
+        ;         lda     .desired_offset+0
+        ;         ora     .desired_offset+1
+        ;         ora     .desired_offset+2
+        ;         ora     .desired_offset+3
+        ;         beq     .z3
+        ;
+        ; ;         jsr     next_cluster   ; NOTE think this is euq fat32_seekcluster
+        ;         jsr     fat32_seekcluster
+        ;         bcc     .error1
+        ; ;         macro_dec32 fat32_size    ; NOTE ? .desired_offset
+        ;         macro_dec32 .desired_offset
+        ;         bra     .z2
+        ;
+        ; ; SECTORS
+        ; .z3:
+        ;         ;jsr     calc_cluster_lba
+        ;
+        ; ;         pla                     ; NOTE
+        ;
+        ;
+        ; ;         clc
+        ; ;         adc     cur_context+context::lba
+        ; ;         sta     cur_context+context::lba
+        ; ;         bcc     .4
+        ; ;         inc     cur_context+context::lba+1
+        ; ;         bne     .4
+        ; ;         inc     cur_context+context::lba+2
+        ; ;         bne     .4
+        ; ;         inc     cur_context+context::lba+3
+        ; .z4:
+        ;         jsr     fat32_readnextsector
+        ;         bcc     .error
+        ;         dec .temp_sector
+        ;         bne .z4
+        ;
+        ;          ; Set pointer so fat32_file_readbyte corectly reads the byte!
+        ; ;         lda     .temp_offset_sector+0
+        ; ;         sta     fat32_bufptr
+        ; ;         lda     .temp_offset_sector+1
+        ; ;         sta     fat32_bufptr+1
+        ;         macro_sub32 fat32_bytesremaining, .desired_offset
+
+        clc
+
+        rts
