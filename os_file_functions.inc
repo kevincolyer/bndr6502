@@ -137,6 +137,7 @@ k_executable_load:
         bne     .loop
 .eof:
         jsr     k_ACIA_putc_crlf
+        clc             ; as it is not an error in this case - we want to read to eof
         rts                     ; all ok, end of file
 .error:
         sec

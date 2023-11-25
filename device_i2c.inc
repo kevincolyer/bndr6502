@@ -50,8 +50,7 @@ i2c_wait10ms:
         phx
 .waitloop:
         stz     osR0            ; this just helps the watchdog not reset the board! (rw activity)
-        jmp     k_ACIA_getc     ; get out
-
+        jsr     k_ACIA_getc     ; get out if key pressed
         bcs     .return
         lda     os_rtc_countdown
         bne     .waitloop

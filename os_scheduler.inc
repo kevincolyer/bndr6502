@@ -9,12 +9,12 @@ k_yield:
         lda     yieldVec0+1
         beq     .noyv0
 
-        jsr     (yieldVec0)
+        jsr     _yv0
 .noyv0:
         lda     yieldVec1+1
         beq     .noyv1
 
-        jsr     (yieldVec1)
+        jsr     _yv1
 .noyv1:
         jsr     k_random        ; shuffle rng a bit
 
@@ -25,3 +25,8 @@ init_yield:
         stz     yieldVec0+1
         stz     yieldVec1+1
         rts
+
+_yv0:
+        jmp yieldVec0
+_yv1:
+        jmp yieldVec1

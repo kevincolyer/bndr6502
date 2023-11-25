@@ -931,10 +931,11 @@ m_cmd_sd_run:
         jsr     dizzybox_load
         bcc     .end
         lda     os_file_error
+        cmp     #E_EOF
         beq     .end
         jmp     _die_with_os_file_error
 .end:
-        ; all loaded well so run executable
+        ; all loaded well (eof) so run executable
         jmp     (osCallArg0)
 
 ; isolate arg

@@ -31,7 +31,7 @@ main:
         macro_oscall oscMonitorAddCmd
 
         jsr     os_i2c_init
-
+        jsr     LCDInit
         ; back to monitor
         os_monitor_return
 

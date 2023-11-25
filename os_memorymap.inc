@@ -151,7 +151,7 @@ os_rtc_set:
 os_rtc_DOW:                     ; in the init code this marks last entry to zero
         byt
 
-        .global os_rtc_CENTISEC,os_rtc_SECONDS,os_rtc_MINUTES,os_rtc_HOURS,os_rtc_DAY,os_rtc_MONTH,os_rtc_YEAR,os_rtc_CENTURY,os_rtc_DOW
+        .global os_rtc_CENTISEC,os_rtc_SECONDS,os_rtc_MINUTES,os_rtc_HOURS,os_rtc_DAY,os_rtc_MONTH,os_rtc_YEAR,os_rtc_CENTURY,os_rtc_DOW, os_rtc_cs_32
 ; i2c reseve 6 bytes
 i2c_v_started:
         byt                     ; osvariable space

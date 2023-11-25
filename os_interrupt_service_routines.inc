@@ -34,7 +34,7 @@ k_rtc_setup:
         lda     #%01000000      ; T1 continuous interrupts
         sta     VIA0ACR         ; Enable VIA1 to generate an interrupt every time T1 times out.
         ;         cli
-        lda     #<TIMER1TIMEOUT ; see constants
+        lda     #<TIMER1TIMEOUT ; see CONSTANTS
         sta     VIA0T1CL        ;
         lda     #>TIMER1TIMEOUT
         sta     VIA0T1CH        ; writing here starts timer

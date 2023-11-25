@@ -269,7 +269,7 @@ os_dizzybox_seek:
 os_print_file_error:
         jmp     k_print_file_error
 
-
+        .global os_clear_os_input_buf,os_print_file_error,os_monitor_prompt
         .global os_yield,os_ACIA_getc,os_ACIA_putc,os_ACIA_putc_crlf,os_ACIA_putc_Hex_Byte,os_ACIA_putz,os_ACIA_putz_osCallArg0,os_line_editor
         .global os_dizzybox_cd, os_dizzybox_ls, os_dizzybox_pwd, os_dizzybox_load, os_dizzybox_cat, os_dizzybox_file_open, os_dizzybox_read_byte, os_dizzybox_read_line, os_dizzybox_seek
 
@@ -308,7 +308,7 @@ msg_version:
         ifdef   nolcd
         .byte   "(-Dnolcd) "
         endif
-        .byte   "v1.0.3",CR,LF,0
+        .byte   "v1.0.4",CR,LF,0
 
 ;===============================================
 ;       COLD BOOT / RESET ENTRY POINT
